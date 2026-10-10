@@ -1,0 +1,30 @@
+:root{--color-background:#f3f6f5;--color-primary:#155b45;--color-border:#d9e2df;--color-muted:#5f6e68}
+body{background:var(--color-background)}
+.app-header{padding:18px 18px 8px;background:var(--color-background)}
+.brand{font-size:21px;letter-spacing:-.7px}
+.view{padding:22px 18px 30px}
+.intro{margin-bottom:20px}
+.intro h1{font-size:22px;line-height:1.35}
+.intro .muted{margin-top:9px;line-height:1.45}
+.study-widget>.actions{margin:9px 0 34px}
+.study-widget>.actions .btn{font-size:12px}
+.workspace-list{gap:10px!important}
+.workspace-card{padding:14px}
+.workspace-card-header{display:flex;align-items:flex-start;gap:8px;position:relative}
+.workspace-card-header h3{flex:1;padding-top:3px;font-size:15px}
+.workspace-card-header>.icon-button{height:28px;width:28px;min-width:28px;line-height:1}
+.workspace-menu{position:absolute;right:0;top:30px;z-index:2;min-width:100px;padding:5px;background:#fff;border:1px solid var(--color-border);border-radius:8px;box-shadow:0 6px 18px #0002}
+.workspace-menu button{display:block;width:100%;text-align:left;padding:5px 10px}
+.workspace-card .site-list{margin:6px 0 12px;line-height:1.5}
+.workspace-card .actions{margin:0}
+.workspace-card .actions .btn{min-height:36px;padding:7px 5px;font-size:12px}
+.sheet-body h3{margin:4px 0 8px}
+.sheet-body h4{margin:18px 0 4px;font-size:12px;color:var(--color-primary)}
+.page-edit-list{display:grid;gap:0!important;margin:6px 0 14px!important;border-top:1px solid var(--color-border)}
+.page-choice{display:flex;align-items:flex-start;gap:9px;padding:11px 0;border-bottom:1px solid var(--color-border);background:transparent}
+.page-choice input{margin-top:2px}
+.page-choice-copy{display:grid;gap:2px;min-width:0;flex:1}
+.page-choice-copy strong{font-size:12px;line-height:1.4}
+.page-choice-copy small{font-size:10px;color:var(--color-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.page-choice .text-button{min-height:27px;padding:2px;font-size:10px;max-width:116px;line-height:1.35}
+.add-link-form{margin-top:10px}

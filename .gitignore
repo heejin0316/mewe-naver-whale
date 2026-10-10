@@ -1,0 +1,9 @@
+node_modules/
+.test-profile*/
+test-results/
+tmp/
+*.log
+.DS_Store
+Thumbs.db
+.env
+.env.*

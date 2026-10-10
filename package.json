@@ -1,0 +1,7 @@
+{
+  "name": "mewe-naver-whale",
+  "version": "0.2.1",
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "node tests/core.test.js" }
+}
