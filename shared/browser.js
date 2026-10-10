@@ -1,4 +1,4 @@
-import { webUrl } from "./validation.js";
+import { pageUrl, pageTitle } from "./validation.js";
 export const api = globalThis.whale || globalThis.chrome;
 export function call(target, method, ...args) {
   return new Promise((resolve, reject) => {
@@ -16,53 +16,101 @@ export function requireWhale() {
 }
 export async function currentTabs() {
   requireWhale();
-  const win = await call(api.windows, "getCurrent", {});
+  // Populated windows identify the left page; tabs.query lists the focused side.
+  // Enumerate targets to find the hidden side even immediately after installation.
+  // Only list IDs: never attach a debugger or send commands to users' pages.
+  const win = await call(api.windows, "getCurrent", { populate: true });
   const tabs = await call(api.tabs, "query", { windowId: win.id });
-  const visibleIds = new Set(tabs.map((tab) => tab.id));
-  const observedTabKey = "mewe.observedTabIds";
-  const area = api.storage.session || api.storage.local;
-  const observed = (await call(area, "get", observedTabKey))[observedTabKey];
-  const candidates = Array.isArray(observed) ? observed.filter((id) => Number.isInteger(id) && !visibleIds.has(id)).slice(-200) : [];
+  const known = new Map([...(win.tabs || []), ...tabs].map((tab) => [tab.id, tab]));
+  let targets;
+  try { targets = await call(api.debugger, "getTargets"); }
+  catch { throw new Error("듀얼탭 목록을 읽지 못했어요. 확장앱 관리에서 ME:WE를 새로고침하고 권한을 확인해 주세요."); }
+  const candidates = [...new Set(targets.filter((target) => target.type === "page" && Number.isInteger(target.tabId) && !known.has(target.tabId)).map((target) => target.tabId))];
   const discovered = await Promise.allSettled(candidates.map((id) => call(api.tabs, "get", id)));
-  const hiddenByIndex = new Map();
   for (const result of discovered) {
-    if (result.status !== "fulfilled") continue;
-    const tab = result.value;
-    if (tab.windowId !== win.id || !Number.isInteger(tab.index)) continue;
+    if (result.status === "fulfilled" && result.value?.windowId === win.id) known.set(result.value.id, result.value);
+  }
+  const byIndex = new Map();
+  let excluded = 0;
+  for (const tab of known.values()) {
+    if (tab.windowId !== win.id || !Number.isInteger(tab.index) || tab.index < 0) continue;
     try {
-      webUrl(tab.pendingUrl || tab.url);
-      const key = `${tab.windowId}:${tab.index}`;
-      hiddenByIndex.set(key, [...(hiddenByIndex.get(key) || []), tab]);
-    } catch { /* Ignore non-web pages. */ }
+      pageUrl(tab.pendingUrl || tab.url);
+      byIndex.set(tab.index, [...(byIndex.get(tab.index) || []), tab]);
+    } catch { excluded++; }
   }
   const pages = [];
   let autoPaired = 0;
-  for (const tab of tabs.sort((a, b) => a.index - b.index)) {
-    try {
-      const leftUrl = webUrl(tab.pendingUrl || tab.url);
-      const pair = hiddenByIndex.get(`${win.id}:${tab.index}`) || [];
-      const right = pair.length === 1 && autoPaired < 5 ? pair[0] : null;
-      const group = right ? "ABCDE"[autoPaired++] : null;
-      pages.push({ id: crypto.randomUUID(), title: (tab.title || new URL(leftUrl).hostname).slice(0, 160), url: leftUrl, openMode: group ? "dual" : "tab", dualGroupId: group });
-      if (right) pages.push({ id: crypto.randomUUID(), title: (right.title || new URL(right.pendingUrl || right.url).hostname).slice(0, 160), url: webUrl(right.pendingUrl || right.url), openMode: "dual", dualGroupId: group });
-    } catch { /* Internal tabs are not captured. */ }
+  for (const [index, members] of [...byIndex].sort(([a], [b]) => a - b)) {
+    const leftId = win.tabs?.find((tab) => tab.index === index)?.id;
+    members.sort((a, b) => Number(b.id === leftId) - Number(a.id === leftId));
+    const group = members.length === 2 && autoPaired < 5 ? "ABCDE"[autoPaired++] : null;
+    for (const tab of members) {
+      const url = pageUrl(tab.pendingUrl || tab.url);
+      pages.push({ id: crypto.randomUUID(), title: (tab.title || pageTitle(url)).slice(0, 160), url, openMode: group ? "dual" : "tab", dualGroupId: group });
+    }
   }
-  return { pages, excluded: tabs.filter((tab) => { try { webUrl(tab.pendingUrl || tab.url); return false; } catch { return true; } }).length, autoPaired, windowId: win.id };
+  return { pages, excluded, autoPaired, windowId: win.id };
 }
 export async function openUrl(url) {
   requireWhale();
-  return call(api.tabs, "create", { url: webUrl(url), active: true });
+  return call(api.tabs, "create", { url: pageUrl(url), active: true });
+}
+// Include both native dual-tab sides, including non-web pages, for safe closing.
+export async function nativeTabs() {
+  const [windows, visible, targets] = await Promise.all([
+    call(api.windows, "getAll", { populate: true }), call(api.tabs, "query", {}), call(api.debugger, "getTargets")
+  ]);
+  const tabs = new Map([...windows.flatMap((win) => win.tabs || []), ...visible].map((tab) => [tab.id, tab]));
+  const missing = [...new Set(targets.filter((t) => t.type === "page" && Number.isInteger(t.tabId) && !tabs.has(t.tabId)).map((t) => t.tabId))];
+  for (const result of await Promise.allSettled(missing.map((id) => call(api.tabs, "get", id)))) {
+    if (result.status === "fulfilled") tabs.set(result.value.id, result.value);
+  }
+  return [...tabs.values()];
 }
 export async function createDual({ left, right, windowId }) {
-  const config = encodeURIComponent(JSON.stringify({ left: webUrl(left), right: webUrl(right) }));
-  const tab = await call(api.tabs, "create", { windowId, active: true, url: api.runtime.getURL("features/study-widget/dual-bridge.html") + "#" + config });
-  const start = Date.now();
-  while (Date.now() - start < 9000) {
-    const current = await call(api.tabs, "get", tab.id);
-    // The bridge only navigates after the native viewport has split.
-    if (current.url === left || current.pendingUrl === left) return { id: tab.id, method: "whale-space-bridge" };
-    await new Promise((resolve) => setTimeout(resolve, 100));
+  left = pageUrl(left); right = pageUrl(right);
+  const token = crypto.randomUUID();
+  const config = encodeURIComponent(JSON.stringify({ token, left }));
+  const bridgeUrl = api.runtime.getURL("features/study-widget/dual-bridge.html") + "#" + config;
+  const peerUrl = api.runtime.getURL("features/study-widget/dual-target.html") + "#" + token;
+  const hasDestination = (tab) => {
+    // Accept site redirects as well as the requested URL; extension helpers are excluded.
+    try { pageUrl(tab.url); return true; } catch { return false; }
+  };
+  const tab = await call(api.tabs, "create", { windowId, active: true, url: bridgeUrl });
+  let peer;
+  try {
+    const start = Date.now();
+    while (Date.now() - start < 9000) {
+      const tabs = await nativeTabs();
+      const current = tabs.find((t) => t.id === tab.id);
+      peer = tabs.find((t) => t.id !== tab.id && t.windowId === current?.windowId && t.index === current?.index && (t.pendingUrl || t.url) === peerUrl);
+      if (peer) {
+        // A unique helper URL and matching native slot identify this launch's right side.
+        // File URLs need tabs.update. Web URLs on the left use location.replace in the
+        // bridge: Whale can route tabs.update(http) on the left to the linked right side.
+        await call(api.tabs, "update", peer.id, { url: right });
+        if (left.startsWith("file:")) await call(api.tabs, "update", tab.id, { url: left });
+        while (Date.now() - start < 9000) {
+          const [a, b] = await Promise.all([call(api.tabs, "get", tab.id), call(api.tabs, "get", peer.id)]);
+          if (hasDestination(a) && hasDestination(b) && a.windowId === b.windowId && a.index === b.index) {
+            return { id: tab.id, tabIds: [tab.id, peer.id], method: "whale-space-bridge" };
+          }
+          await new Promise((resolve) => setTimeout(resolve, 100));
+        }
+        break;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    throw new Error("나란히 보기를 준비하지 못했어요.");
+  } catch (error) {
+    // Remove only helpers from this launch before the caller opens regular fallback tabs.
+    const owned = new Set([tab.id, ...(peer ? [peer.id] : [])]);
+    try {
+      for (const t of await nativeTabs()) if ([bridgeUrl, peerUrl].includes(t.pendingUrl || t.url)) owned.add(t.id);
+    } catch { /* Known helper IDs can still be cleaned up. */ }
+    for (const id of owned) { try { await call(api.tabs, "remove", id); } catch { /* Closing one side may close both. */ } }
+    throw error;
   }
-  try { await call(api.tabs, "remove", tab.id); } catch { /* The bridge may already be gone. */ }
-  throw new Error("나란히 보기를 준비하지 못했어요.");
 }

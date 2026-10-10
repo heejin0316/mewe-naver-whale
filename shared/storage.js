@@ -5,8 +5,8 @@ export async function read(key, fallback) {
 }
 // Only the service worker writes user data. UI modules use messages instead.
 export async function write(key, value) { await call(api.storage.local, "set", { [key]: value }); }
-export function subscribe(key, listener) {
-  const handler = (changes, area) => { if (area === "local" && changes[key]) listener(changes[key].newValue); };
+export function subscribe(key, listener, storageArea = "local") {
+  const handler = (changes, area) => { if (area === storageArea && changes[key]) listener(changes[key].newValue); };
   api.storage.onChanged.addListener(handler);
   return () => api.storage.onChanged.removeListener(handler);
 }

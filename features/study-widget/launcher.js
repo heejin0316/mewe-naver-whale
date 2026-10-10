@@ -13,7 +13,7 @@ export async function launchWorkspace(input, browser) {
       const pair = clean.pages.filter((p) => p.dualGroupId === page.dualGroupId);
       try {
         const tab = await browser.createDual({ windowId: target.id, left: pair[0].url, right: pair[1].url });
-        opened.push(...pair.map((p) => ({ pageId: p.id, tabId: tab.id, title: p.title })));
+        opened.push(...pair.map((p, i) => ({ pageId: p.id, tabId: tab.tabIds?.[i] ?? tab.id, title: p.title })));
         dualGroupsOpened++;
       } catch {
         fallbackGroups++;

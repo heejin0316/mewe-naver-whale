@@ -1,7 +1,10 @@
 {
   "name": "mewe-naver-whale",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
-  "scripts": { "test": "node tests/core.test.js" }
+  "scripts": {
+    "test": "node tests/all.test.js",
+    "test:rules": "node tests/sharing-rules.test.js"
+  }
 }

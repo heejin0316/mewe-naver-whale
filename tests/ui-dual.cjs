@@ -9,7 +9,7 @@ const server = http.createServer((req, res) => {
   }
   const file = path.resolve(root, "." + new URL(req.url, "http://localhost").pathname);
   if (!file.startsWith(root + path.sep) || !fs.existsSync(file) || !fs.statSync(file).isFile()) { res.writeHead(404); return res.end(); }
-  res.setHeader("Content-Type", ({ ".js": "text/javascript", ".css": "text/css", ".svg": "image/svg+xml" })[path.extname(file)] || "application/octet-stream");
+  res.setHeader("Content-Type", ({ ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".css": "text/css", ".svg": "image/svg+xml" })[path.extname(file)] || "application/octet-stream");
   fs.createReadStream(file).pipe(res);
 });
 (async () => {
@@ -24,16 +24,19 @@ const server = http.createServer((req, res) => {
       const tab = (id, title, query, index) => ({ id, title, url: `https://search.naver.com/search.naver?query=${query}`, windowId: 1, index });
       const left = tab(1, "이화여대 : 네이버 검색", "ewha", 0), right = tab(2, "연세대 : 네이버 검색", "yonsei", 0), single = tab(3, "충남대 : 네이버 검색", "chungnam", 1);
       globalThis.whale = {
-        runtime: { id: "test" }, sidebarAction: {}, windows: { getCurrent: (_options, done) => done({ id: 1 }) },
+        runtime: { id: "test" }, sidebarAction: {}, windows: { getCurrent: (_options, done) => done({ id: 1, tabs: [left, single] }) },
         tabs: { query: (_options, done) => done([left, single]), get: (id, done) => done(id === 2 ? right : null) },
-        storage: { session: { get: (key, done) => done({ [key]: [1, 2, 3] }) } }
+        debugger: { getTargets: done => done([{type:"page", tabId:1}, {type:"page", tabId:2}, {type:"page", tabId:3}]) }
       };
       const { mount } = await import("/features/study-widget/view.js");
       const { modal } = await import("/shared/modal.js");
       const { mutateWorkspaces } = await import("/features/study-widget/controller.js");
       const capture = await import("/shared/browser.js");
       window.saved = []; let listener;
-      const services = { modal, browser: capture, toast() {}, launch() {}, workspaceStore: {
+      const services = { modal, browser: capture, toast() {},
+        async launch(w) { window.saved.find(item => item.id === w.id).openedCount = w.pages.length; await listener(); },
+        async closeWorkspace(w) { window.saved.find(item => item.id === w.id).openedCount = 0; await listener(); },
+        workspaceStore: {
         list: async () => structuredClone(window.saved), subscribe: fn => { listener = fn; return () => {}; },
         save: async value => { window.saved = mutateWorkspaces(window.saved, "WORKSPACE_SAVE", value); await listener(); },
         remove: async () => {}
@@ -41,10 +44,12 @@ const server = http.createServer((req, res) => {
       mount(document.querySelector("#view"), services);
     });
     await page.getByRole("button", { name: "지금 작업공간 저장", exact: true }).click();
-    assert.equal(await page.locator(".dual-page-group").count(), 1);
-    assert.equal(await page.locator(".dual-page-group .page-choice").count(), 2);
+    assert.equal(await page.locator(".page-choice").count(), 3);
+    assert.deepEqual(await page.locator(".page-choice .dual-badge").allTextContents(), ["듀얼탭 A", "듀얼탭 B"]);
+    assert.deepEqual(await page.locator(".page-choice strong").allTextContents(), ["이화여대 : 네이버 검색", "연세대 : 네이버 검색", "충남대 : 네이버 검색"]);
+    assert.equal(await page.getByRole("button", {name:/다음 페이지와/}).count(), 0);
     await page.getByLabel("작업공간 이름").fill("학교");
-    const pair = page.getByRole("checkbox", { name: /듀얼탭 함께 저장/ });
+    const pair = page.getByRole("checkbox", { name: "이화여대 : 네이버 검색 작업공간에 넣기" });
     await pair.uncheck();
     await page.getByText("1개 페이지 선택", { exact: true }).waitFor();
     await pair.check();
@@ -57,16 +62,87 @@ const server = http.createServer((req, res) => {
     assert.deepEqual(saved.pages.map(p => p.openMode), ["dual", "dual", "tab"]);
     assert.equal(saved.pages[0].dualGroupId, saved.pages[1].dualGroupId);
     await page.screenshot({ path: path.join(root, "test-results/dual-saved.png") });
+    await page.getByRole("button", { name: "작업공간 공유", exact: true }).click();
+    await page.getByRole("dialog").waitFor();
+    assert.equal(await page.locator(".share-pages li").count(), 3);
+    await page.getByRole("button", { name: "닫기", exact: true }).click();
+    await page.getByRole("button", { name: "작업공간 열기", exact: true }).click();
+    await page.getByRole("button", { name: "작업공간 닫기", exact: true }).waitFor();
+    assert.equal(await page.getByRole("button", { name: "작업공간 열기", exact: true }).count(), 0);
+    await page.setViewportSize({ width: 320, height: 720 });
+    const bounds = await page.locator(".workspace-actions .btn").evaluateAll(nodes => nodes.map(node => {
+      const rect = node.getBoundingClientRect(); return { top: rect.top, height: rect.height, width: rect.width, fits: node.scrollWidth <= node.clientWidth };
+    }));
+    assert.equal(bounds[0].top, bounds[1].top);
+    assert.equal(bounds[0].height, bounds[1].height);
+    assert.equal(bounds[0].width, bounds[1].width);
+    assert.ok(bounds.every(b => b.fits));
+    await page.screenshot({ path: path.join(root, "test-results/workspace-actions-320.png") });
+    await page.getByRole("button", { name: "작업공간 닫기", exact: true }).click();
+    await page.getByRole("button", { name: "작업공간 열기", exact: true }).waitFor();
+    await page.setViewportSize({ width: 390, height: 844 });
     await page.getByRole("button", { name: "학교 메뉴" }).click();
     await page.getByRole("button", { name: "수정", exact: true }).click();
-    assert.equal(await page.locator(".dual-page-group").count(), 1);
+    assert.deepEqual(await page.locator(".page-choice .dual-badge").allTextContents(), ["듀얼탭 A", "듀얼탭 B"]);
     await page.setViewportSize({ width: 320, height: 720 });
-    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth || [...document.querySelectorAll('.sheet-body, .dual-page-group')].some(node => node.scrollWidth > node.clientWidth)), false);
-    await page.getByRole("button", { name: /듀얼탭 해제/ }).click();
-    assert.equal(await page.locator(".dual-page-group").count(), 0);
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth || [...document.querySelectorAll('.sheet-body, .page-choice')].some(node => node.scrollWidth > node.clientWidth)), false);
+    await page.screenshot({ path: path.join(root, "test-results/dual-editor-320.png") });
     await page.getByRole("button", { name: "저장", exact: true }).click();
-    assert.deepEqual(await page.evaluate(() => window.saved[0].pages.map(p => p.openMode)), ["tab", "tab", "tab"]);
+    assert.deepEqual(await page.evaluate(() => window.saved[0].pages.map(p => p.openMode)), ["dual", "dual", "tab"]);
+    await page.getByRole("button", { name: "학교 메뉴" }).click();
+    await page.getByRole("button", { name: "수정", exact: true }).click();
+    assert.equal(await page.getByRole("checkbox").count(), 0);
+    const singleMenu = page.getByRole("button", { name: "충남대 : 네이버 검색 메뉴", exact: true });
+    await singleMenu.click();
+    await page.getByRole("menuitem", { name: "작업공간에서 제거" }).waitFor();
+    await page.screenshot({ path: path.join(root, "test-results/page-remove-menu-320.png") });
+    await page.keyboard.press("Escape");
+    assert.equal(await page.getByRole("menuitem").count(), 0);
+    assert.equal(await page.getByRole("dialog").count(), 1);
+    assert.equal(await singleMenu.evaluate(node => node === document.activeElement), true);
+    await singleMenu.click();
+    await page.getByRole("menuitem", { name: "작업공간에서 제거" }).click();
+    assert.equal(await page.locator(".page-choice").count(), 2);
+    assert.equal(await page.evaluate(() => window.saved[0].pages.length), 3);
+    await page.getByRole("button", { name: "이화여대 : 네이버 검색 메뉴", exact: true }).click();
+    await page.getByRole("menuitem", { name: "작업공간에서 제거" }).click();
+    assert.equal(await page.locator(".page-choice .dual-badge").count(), 0);
+    assert.deepEqual(await page.locator(".page-choice strong").allTextContents(), ["연세대 : 네이버 검색"]);
+    await page.getByRole("button", { name: "＋ 링크 직접 추가", exact: true }).click();
+    await page.getByLabel("추가할 링크 주소").fill("https://example.com/notes");
+    await page.getByRole("button", { name: "추가", exact: true }).click();
+    assert.equal(await page.locator(".page-menu-toggle").count(), 2);
+    await page.getByRole("button", { name: "저장", exact: true }).click();
+    assert.deepEqual(await page.evaluate(() => window.saved[0].pages.map(p => [p.title, p.openMode, p.dualGroupId])), [["연세대 : 네이버 검색", "tab", null], ["example.com", "tab", null]]);
+    await page.getByRole("button", { name: "학교 메뉴" }).click();
+    await page.getByRole("button", { name: "수정", exact: true }).click();
+    for (const title of ["연세대 : 네이버 검색", "example.com"]) {
+      await page.getByRole("button", { name: title + " 메뉴", exact: true }).click();
+      await page.getByRole("menuitem", { name: "작업공간에서 제거" }).click();
+    }
+    await page.getByText("페이지가 없어요. 저장하려면 링크를 추가해 주세요.", { exact: true }).waitFor();
+    await page.getByRole("button", { name: "저장", exact: true }).click();
+    await page.getByRole("alert").filter({ hasText: "페이지는 1~10개 선택해 주세요." }).waitFor();
+    page.once("dialog", dialog => dialog.accept());
+    await page.getByRole("button", { name: "닫기", exact: true }).click();
+    assert.equal(await page.evaluate(() => window.saved[0].pages.length), 2);
+    await page.evaluate(async () => {
+      const { openAbout } = await import("/features/about/view.js");
+      const { modal } = await import("/shared/modal.js");
+      openAbout(modal);
+    });
+    await page.getByRole("heading", { name: "앱 정보", exact: true }).waitFor();
+    assert.equal(await page.getByRole("link", { name: "h33jin.jeong@gmail.com", exact: true }).getAttribute("href"), "mailto:h33jin.jeong@gmail.com");
+    await page.locator(".privacy-details summary").click();
+    assert.equal(await page.locator(".privacy-details").getAttribute("open"), "");
+    assert.equal(await page.evaluate(() => [...document.querySelectorAll('.sheet-body, .about-content')].some(node => node.scrollWidth > node.clientWidth)), false);
+    await page.screenshot({ path: path.join(root, "test-results/app-info-320.png") });
+    await page.getByRole("button", { name: "확인", exact: true }).click();
+    await page.goto(`http://127.0.0.1:${server.address().port}/docs/privacy/index.html`);
+    await page.getByRole("heading", { name: "ME:WE 개인정보 처리방침 초안", exact: true }).waitFor();
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+    await page.screenshot({ path: path.join(root, "test-results/privacy-page-320.png") });
     assert.deepEqual(errors, []);
-    console.log("PASS: captured pair UI, joint selection, persistence, edit, unpair, 320px layout; simulated Whale API.");
+    console.log("PASS: captured pair UI, joint selection, persistence, edit menus, single removal, dual partner preserved, add after removal, empty save blocked, discard, Escape, 320px layout; simulated Whale API.");
   } finally { if (browser) await browser.close(); server.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

@@ -1,0 +1,42 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function validPage(p) {
+      // Calling string/map methods also rejects wrong types or missing fields.
+      // Compact checks keep all ten pages within Firestore's expression budget.
+      return p.keys().hasOnly(['id', 'title', 'url', 'openMode', 'dualGroupId'])
+        && p.id.matches('[\\s\\S]{1,100}')
+        && p.title.matches('[\\s\\S]{1,160}')
+        && p.url.size() <= 4096
+        && p.url.matches('https?://[^/@\\s]+([/?#].*)?')
+        && ((p.openMode == 'tab' && p.dualGroupId == null)
+          || (p.openMode == 'dual'
+            && p.dualGroupId.matches('[a-zA-Z0-9_-]{1,40}')));
+    }
+    function pageAt(pages, i) {
+      return pages.size() <= i || validPage(pages[i]);
+    }
+    function validShare(d) {
+      return d.keys().hasOnly(['schemaVersion', 'name', 'pages', 'ownerUid', 'createdAt', 'expiresAt'])
+        && d.schemaVersion == 1
+        && d.ownerUid == request.auth.uid
+        && d.name is string && d.name.size() > 0 && d.name.size() <= 60
+        && d.createdAt == request.time
+        && d.expiresAt is timestamp && d.expiresAt > request.time
+        && d.expiresAt <= request.time + duration.value(8, 'd')
+        && d.pages is list && d.pages.size() >= 1 && d.pages.size() <= 10
+        && pageAt(d.pages, 0) && pageAt(d.pages, 1) && pageAt(d.pages, 2)
+        && pageAt(d.pages, 3) && pageAt(d.pages, 4) && pageAt(d.pages, 5)
+        && pageAt(d.pages, 6) && pageAt(d.pages, 7) && pageAt(d.pages, 8) && pageAt(d.pages, 9);
+    }
+    match /shares/{code} {
+      allow create: if request.auth != null && code.matches('[A-HJ-NP-Z2-9]{12}') && validShare(request.resource.data);
+      // A code is a bearer capability: another signed-in guest may read this one snapshot.
+      // Collection listing and edits are forbidden. Expiration blocks reads without paid TTL.
+      allow get: if request.auth != null && resource.data.expiresAt > request.time;
+      allow list, update: if false;
+      allow delete: if request.auth != null && resource.data.ownerUid == request.auth.uid;
+    }
+    match /{document=**} { allow read, write: if false; }
+  }
+}

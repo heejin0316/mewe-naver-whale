@@ -1,6 +1,7 @@
 import { el, button, field, busy } from "../../shared/dom.js";
-import { webUrl, workspace } from "../../shared/validation.js";
+import { pageUrl, pageTitle, workspace } from "../../shared/validation.js";
 import { groupPages, prepareRows } from "./page-groups.js";
+import { icon } from "../../shared/icons.js";
 
 export function openEditor(services, original = null, captured = null) {
   let dirty = false;
@@ -11,69 +12,84 @@ export function openEditor(services, original = null, captured = null) {
   name.addEventListener("input", () => { dirty = true; });
   const list = el("div", { className: "page-edit-list" });
   const count = el("p", { className: "muted", role: "status" });
-  const addButton = button("＋ 링크 직접 추가", () => { addForm.hidden = false; addButton.hidden = true; urlInput.focus(); }, "btn full");
-  const urlInput = el("input", { type: "url", placeholder: "https://example.com", "aria-label": "추가할 링크 주소" });
-  const addForm = el("div", { className: "add-link-form", hidden: true }, field("링크 주소", urlInput), button("추가", () => {
+  let openedMenu = null;
+  function closeMenu(restoreFocus = false) {
+    if (!openedMenu) return;
+    const { menu, toggle } = openedMenu;
+    menu.hidden = true; toggle.setAttribute("aria-expanded", "false"); openedMenu = null;
+    if (restoreFocus) toggle.focus();
+  }
+  const dialog = sheet.body.closest("dialog");
+  dialog.addEventListener("click", (event) => {
+    if (openedMenu && !openedMenu.row.contains(event.target)) closeMenu();
+  });
+  dialog.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && openedMenu) {
+      event.preventDefault(); event.stopPropagation(); closeMenu(true);
+    }
+  });
+  const addButton = button("＋ 링크 직접 추가", () => { addForm.hidden = false; addButton.hidden = true; urlInput.focus(); }, "btn full add-link-button");
+  const urlInput = el("input", { type: "text", placeholder: "https://... 또는 C:\\자료\\강의.pdf", "aria-label": "추가할 링크 주소", "aria-describedby": "link-address-hint" });
+  const addForm = el("div", { className: "add-link-form", hidden: true }, field("웹 주소 또는 파일 경로", urlInput), el("p", { id: "link-address-hint", className: "muted" }, "브라우저 주소창의 file:/// 주소나 파일의 전체 경로를 붙여넣으세요. 파일을 옮기면 경로도 수정해야 해요."), button("추가", () => {
     try {
-      const url = webUrl(urlInput.value);
+      const url = pageUrl(urlInput.value);
       if (rows.filter((p) => p.selected).length >= 10) throw new Error("페이지는 최대 10개까지 선택할 수 있어요.");
-      rows.push({ id: crypto.randomUUID(), title: new URL(url).hostname, url, openMode: "tab", dualGroupId: null, selected: true });
+      rows.push({ id: crypto.randomUUID(), title: pageTitle(url), url, openMode: "tab", dualGroupId: null, selected: true });
       urlInput.value = ""; addForm.hidden = true; addButton.hidden = false; dirty = true; sheet.error(""); renderRows();
     } catch (error) { sheet.error(error.message); }
   }, "btn primary full"));
 
-  function unpair(group) {
-    rows.forEach((p) => { if (p.dualGroupId === group) { p.openMode = "tab"; p.dualGroupId = null; } });
-  }
   function renderRows() {
+    closeMenu();
     list.replaceChildren();
     const selectedCount = rows.filter((p) => p.selected).length;
     const groups = groupPages(rows);
     const dualCount = groups.filter((group) => group.dual && group.pages.every((p) => p.selected)).length;
-    count.textContent = `${selectedCount}개 페이지 선택${dualCount ? ` · 듀얼탭 ${dualCount}개` : ""}`;
+    count.textContent = selectedCount + (original ? "개 페이지" : "개 페이지 선택") + (dualCount ? " · 듀얼탭 " + dualCount + "개" : "");
+    if (!rows.length && original) list.append(el("p", { className: "muted page-list-empty" }, "페이지가 없어요. 저장하려면 링크를 추가해 주세요."));
     groups.forEach((group) => {
-      const page = group.pages[0], index = rows.indexOf(page);
-      if (group.dual) {
-        const checked = el("input", { type: "checkbox", checked: group.pages.every((p) => p.selected), "aria-label": `${group.pages.map((p) => p.title).join(" · ")} 듀얼탭 함께 저장` });
+      group.pages.forEach((page, side) => {
+        const checked = el("input", { type: "checkbox", checked: page.selected, "aria-label": page.title + " 작업공간에 넣기" });
         checked.addEventListener("change", () => {
-          if (checked.checked && rows.filter((p) => p.selected && !group.pages.includes(p)).length + 2 > 10) {
-            checked.checked = false; sheet.error("듀얼탭의 두 페이지를 함께 선택하려면 2개 자리가 필요해요. 최대 10개까지 저장할 수 있어요."); return;
+          const otherCount = rows.filter((p) => p.selected && !group.pages.includes(p)).length;
+          if (checked.checked && otherCount + group.pages.length > 10) {
+            checked.checked = false;
+            sheet.error(group.dual ? "듀얼탭의 두 페이지를 함께 선택하려면 2개 자리가 필요해요. 최대 10개까지 저장할 수 있어요." : "페이지는 최대 10개까지 선택할 수 있어요.");
+            return;
           }
           group.pages.forEach((p) => { p.selected = checked.checked; });
           dirty = true; sheet.error(""); renderRows();
         });
-        const pair = el("section", { className: "dual-page-group", "aria-label": "듀얼탭으로 저장할 페이지" },
-          el("div", { className: "dual-group-header" },
-            el("label", { className: "dual-group-label" }, checked, el("span", { className: "dual-badge" }, "듀얼탭"), el("small", {}, "2개 페이지")),
-            button("해제", () => { unpair(page.dualGroupId); dirty = true; sheet.error(""); renderRows(); }, "text-button")
-          ),
-          ...group.pages.map((p) => el("div", { className: "page-choice" },
-            el("span", { className: "page-choice-copy" }, el("strong", {}, p.title), el("small", {}, p.url)))));
-        pair.querySelector("button").setAttribute("aria-label", `${group.pages.map((p) => p.title).join(" · ")} 듀얼탭 해제`);
-        list.append(pair);
-        return;
-      }
-      const checked = el("input", { type: "checkbox", checked: page.selected, "aria-label": `${page.title} 작업공간에 넣기` });
-      checked.addEventListener("change", () => {
-        if (checked.checked && rows.filter((p) => p.selected).length >= 10) { checked.checked = false; sheet.error("페이지는 최대 10개까지 선택할 수 있어요."); return; }
-        page.selected = checked.checked; dirty = true; sheet.error(""); renderRows();
+        const row = el(original ? "div" : "label", { className: "page-choice" + (original ? " page-choice-edit" : "") }, original ? null : checked,
+          el("span", { className: "page-choice-copy" }, el("strong", {}, page.title), el("small", {}, page.url)));
+        if (group.dual) row.append(el("span", { className: "dual-badge", "data-side": side === 0 ? "a" : "b", title: (side === 0 ? "왼쪽" : "오른쪽") + " 페이지" + (original ? "" : " · 두 페이지를 함께 저장해요") }, "듀얼탭 " + (side === 0 ? "A" : "B")));
+        if (original) {
+          const menu = el("div", { className: "page-menu", role: "menu", "aria-label": page.title + " 메뉴", hidden: true });
+          const toggle = button("⋮", () => {
+            const wasOpen = !menu.hidden; closeMenu();
+            if (!wasOpen) { menu.hidden = false; toggle.setAttribute("aria-expanded", "true"); openedMenu = { menu, toggle, row }; remove.focus(); }
+          }, "icon-button page-menu-toggle");
+          toggle.setAttribute("aria-label", page.title + " 메뉴");
+          toggle.setAttribute("aria-haspopup", "menu"); toggle.setAttribute("aria-expanded", "false");
+          const remove = button("작업공간에서 제거", () => {
+            const index = rows.indexOf(page);
+            rows = rows.filter((p) => p !== page);
+            if (group.dual) group.pages.filter((p) => p !== page).forEach((p) => { p.openMode = "tab"; p.dualGroupId = null; });
+            dirty = true; sheet.error(""); renderRows();
+            const next = list.querySelectorAll(".page-menu-toggle");
+            (next[Math.min(index, next.length - 1)] || addButton).focus();
+          }, "text-button");
+          remove.setAttribute("role", "menuitem"); remove.prepend(icon("trash"));
+          menu.append(remove); row.append(toggle, menu);
+          row.addEventListener("focusout", (event) => { if (!row.contains(event.relatedTarget)) closeMenu(); });
+        }
+        list.append(row);
       });
-      const row = el("div", { className: "page-choice" }, checked,
-        el("span", { className: "page-choice-copy" }, el("strong", {}, page.title), el("small", {}, page.url)));
-      if (page.selected && page.openMode !== "dual" && rows[index + 1]?.selected && rows[index + 1].openMode !== "dual") {
-        row.append(button("다음 페이지와 듀얼탭", () => {
-          const group = [..."ABCDE"].find((id) => !rows.some((p) => p.dualGroupId === id));
-          if (!group) { sheet.error("나란히 보는 묶음은 최대 5개예요."); return; }
-          for (const p of [page, rows[index + 1]]) { p.openMode = "dual"; p.dualGroupId = group; }
-          dirty = true; sheet.error(""); renderRows();
-        }, "text-button"));
-      }
-      list.append(row);
     });
   }
 
   sheet.body.classList.add("study-widget");
-  sheet.body.append(field("작업공간 이름", name), el("h3", {}, "작업공간에 넣을 페이지"), count, list, addButton, addForm);
+  sheet.body.append(field("작업공간 이름", name), el("h3", {}, original ? "작업공간에 담긴 페이지" : "작업공간에 넣을 페이지"), count, list, addButton, addForm);
   sheet.footer.append(button("저장", (event) => busy(event.currentTarget, async () => {
     const value = workspace({ name: name.value, pages: rows.filter((p) => p.selected) });
     await services.workspaceStore.save({ ...value, ...(original ? { id: original.id, updatedAt: original.updatedAt } : {}) });

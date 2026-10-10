@@ -2,6 +2,7 @@ node_modules/
 .test-profile*/
 test-results/
 tmp/
+release/
 *.log
 .DS_Store
 Thumbs.db
