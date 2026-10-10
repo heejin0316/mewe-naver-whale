@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "ME:WE — 이화의 공부 작업공간",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "열어둔 공부 페이지를 작업공간으로 저장하고 필요할 때 다시 여는 네이버 웨일 사이드바 앱",
   "permissions": ["storage", "tabs", "webNavigation"],
   "background": { "service_worker": "background.js", "type": "module" },

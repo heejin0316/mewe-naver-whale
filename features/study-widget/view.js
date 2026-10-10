@@ -1,5 +1,6 @@
 import { el, button, busy } from "../../shared/dom.js";
 import { openEditor } from "./editor.js";
+import { groupPages } from "./page-groups.js";
 
 export function mount(container, services) {
   let alive = true, revision = 0;
@@ -26,6 +27,8 @@ export function mount(container, services) {
       errorBox.hidden = true; cards.replaceChildren();
       if (!items.length) cards.append(el("div", { className: "empty" }, "저장한 작업공간이 없어요."));
       items.forEach((w) => {
+        const groups = groupPages(w.pages);
+        const dualCount = groups.filter((group) => group.dual).length;
         const card = el("article", { className: "card workspace-card" });
         const menu = el("div", { className: "workspace-menu", hidden: true });
         const toggle = button("⋮", () => { menu.hidden = !menu.hidden; }, "icon-button");
@@ -36,8 +39,10 @@ export function mount(container, services) {
         );
         card.append(
           el("div", { className: "workspace-card-header" }, el("h3", {}, w.name), toggle, menu),
-          el("p", { className: "muted" }, `${w.pages.length}개 페이지`),
-          el("p", { className: "site-list" }, w.pages.map((p) => p.title).join(" · ")),
+          el("p", { className: "muted" }, `${w.pages.length}개 페이지${dualCount ? ` · 듀얼탭 ${dualCount}개` : ""}`),
+          el("div", { className: "site-list" }, ...groups.map((group) => group.dual
+            ? el("div", { className: "saved-dual-group" }, el("span", { className: "dual-badge" }, "듀얼탭"), el("span", {}, group.pages.map((p) => p.title).join(" + ")))
+            : el("div", {}, group.pages[0].title))),
           el("div", { className: "actions" },
             button("작업공간 열기", (event) => busy(event.currentTarget, () => services.launch(w), services.toast), "btn primary")
           )

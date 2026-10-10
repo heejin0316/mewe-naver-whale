@@ -4,8 +4,33 @@ import { webUrl, workspace } from "../shared/validation.js";
 import { mutateWorkspaces } from "../features/study-widget/controller.js";
 import { launchWorkspace } from "../features/study-widget/launcher.js";
 import { serialQueue } from "../shared/storage.js";
+import { groupPages, prepareRows } from "../features/study-widget/page-groups.js";
 const page = (id, extra = {}) => ({ id, title: `페이지 ${id}`, url: `https://example.com/${id}`, openMode: "tab", dualGroupId: null, ...extra });
 const sample = () => ({ name: "이화의 논문 📚", pages: [page("a"), page("b")] });
+
+test("감지된 듀얼탭은 생성·저장·수정·실행까지 한 쌍으로 유지", async () => {
+  const captured = [page("ewha", { openMode: "dual", dualGroupId: "A" }), page("yonsei", { openMode: "dual", dualGroupId: "A" }), page("chungnam")];
+  const draft = prepareRows(captured);
+  const [saved] = mutateWorkspaces([], "WORKSPACE_SAVE", { name: "학교", pages: draft.filter((p) => p.selected) });
+  const reopened = prepareRows(JSON.parse(JSON.stringify(saved)).pages);
+  assert.deepEqual(groupPages(reopened).map((group) => [group.dual, group.pages.length]), [[true, 2], [false, 1]]);
+  const pairs = [], singles = [];
+  const result = await launchWorkspace(saved, { currentWindow: async () => ({ id: 1 }), createDual: async (pair) => { pairs.push(pair); return { id: 10 }; }, create: async (tab) => { singles.push(tab); return { id: 11 }; }, activate: async () => {} });
+  assert.equal(pairs.length, 1); assert.equal(singles.length, 1);
+  assert.equal(pairs[0].left, captured[0].url); assert.equal(pairs[0].right, captured[1].url);
+  assert.equal(result.dualGroupsOpened, 1);
+});
+
+test("10페이지 경계에서도 듀얼탭의 한쪽만 선택하거나 설정을 없애지 않는다", () => {
+  const captured = [...Array.from({ length: 9 }, (_, i) => page(String(i))), page("left", { openMode: "dual", dualGroupId: "B" }), page("right", { openMode: "dual", dualGroupId: "B" })];
+  const draft = prepareRows(captured);
+  assert.equal(draft.filter((p) => p.selected).length, 9);
+  assert.deepEqual(draft.slice(-2).map((p) => [p.selected, p.openMode, p.dualGroupId]), [[false, "dual", "B"], [false, "dual", "B"]]);
+  assert.equal(groupPages(draft).at(-1).dual, true);
+  const full = prepareRows(captured.slice(1));
+  assert.equal(full.filter((p) => p.selected).length, 10);
+  assert.ok(full.slice(-2).every((p) => p.selected));
+});
 test("실행 가능한 스킴·자격정보 URL 거부", () => {
   for (const url of ["javascript:alert(1)", "data:text/html,x", "file:///a", "whale://settings", "https://user:pass@example.com"]) assert.throws(() => webUrl(url));
   assert.equal(webUrl("https://example.com"), "https://example.com/");
