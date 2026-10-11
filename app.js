@@ -8,12 +8,12 @@ import { openAbout } from "./features/about/view.js";
 
 let unmount = () => {}, toastTimer;
 const container = document.querySelector("#view");
-function toast(message, duration = 5000) {
+function toast(message) {
   clearTimeout(toastTimer); document.querySelector("#toast")?.remove();
   const node = el("div", { id: "toast", className: "toast", role: "status" }, message);
   // A modal dialog is in the browser's top layer: its toast must live inside it.
   (document.querySelector("dialog[open]") || document.body).append(node);
-  toastTimer = setTimeout(() => { node.remove(); }, duration);
+  toastTimer = setTimeout(() => { node.remove(); }, 1500);
 }
 function navigate(route) {
   if (!modal.close()) return;

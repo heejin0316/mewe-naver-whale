@@ -2,16 +2,19 @@ import { el, button } from "../../shared/dom.js";
 import { api } from "../../shared/browser.js";
 import { privacy, supportEmail } from "../../shared/privacy-content.js";
 
-export function openAbout(modal) {
-  const sheet = modal.open("앱 정보"); if (!sheet) return;
-  sheet.body.classList.add("about-content");
-  const version = api?.runtime?.getManifest?.().version || "0.3.0";
-  const policy = el("details", { className: "privacy-details" }, el("summary", {}, "개인정보 처리방침 · 공개 전 검토본"),
+export function privacyDetails() {
+  return el("details", { className: "privacy-details about-content" }, el("summary", {}, "개인정보 처리방침"),
     el("p", { className: "notice" }, privacy.status),
     el("p", { className: "muted" }, `작성일 ${privacy.date}`),
     ...privacy.sections.map(section => el("section", {}, el("h3", {}, section.title),
       ...section.paragraphs.map(p => el("p", {}, p)),
       ...(section.links || []).map(link => el("a", { href: link.url, target: "_blank", rel: "noopener noreferrer" }, link.label)))));
+}
+
+export function openAbout(modal) {
+  const sheet = modal.open("앱 정보"); if (!sheet) return;
+  sheet.body.classList.add("about-content");
+  const version = api?.runtime?.getManifest?.().version || "0.3.0";
   sheet.body.append(el("h3", {}, "ME:WE"), el("p", { className: "muted" }, `버전 ${version}`),
     el("p", {}, "열어둔 학습 페이지를 저장하고 다시 여는 개인 제작 사이드바 확장앱입니다. 네이버 또는 이화여자대학교의 공식 앱이 아닙니다."),
     el("h3", {}, "문의 및 삭제 요청"), el("a", { href: `mailto:${supportEmail}` }, supportEmail),
@@ -23,6 +26,6 @@ export function openAbout(modal) {
       "디버거: 듀얼탭의 양쪽 페이지 ID 확인만 사용. 디버거 연결·명령 실행 없음",
       "클립보드 쓰기: 공유 코드 복사",
       "Firebase API 접근: 익명 인증과 공유 코드 저장·조회"
-    ].map(text => el("li", {}, text))), policy);
+    ].map(text => el("li", {}, text))), privacyDetails());
   sheet.footer.append(button("확인", () => sheet.close(), "btn primary full"));
 }

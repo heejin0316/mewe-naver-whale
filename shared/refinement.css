@@ -118,6 +118,9 @@ input[type=checkbox]{accent-color:var(--color-primary);width:18px;height:18px}
 .share-excluded h4{color:#68737d;margin:0 0 8px}
 .share-excluded ul{padding-left:18px;margin:0;font-size:12px;overflow-wrap:anywhere}
 .share-excluded p,.share-note{font-size:11px;line-height:1.8;margin:12px 0;overflow-wrap:anywhere}
+.share-guidance{padding-left:17px;margin:16px 0 12px;font-size:11px;line-height:1.7;color:#727880}
+.share-guidance li+li{margin-top:5px}.share-guidance a{color:var(--color-primary);text-underline-offset:3px}
+.sharing .privacy-details{margin-top:12px;padding-top:12px}.sharing .privacy-details summary{font-size:11px}
 .share-code{font-variant-numeric:tabular-nums;letter-spacing:1px}
 .sharing .field{margin:18px 0 8px}
 .share-actions{display:flex;gap:8px}.share-actions .btn{flex:1;min-width:0}.sheet-footer .share-actions .btn+.btn{margin:0}

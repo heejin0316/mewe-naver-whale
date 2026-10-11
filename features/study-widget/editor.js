@@ -20,6 +20,10 @@ export function openEditor(services, original = null, captured = null) {
     if (restoreFocus) toggle.focus();
   }
   const dialog = sheet.body.closest("dialog");
+  // Holding Enter must not activate Save after focus moves from the link field.
+  dialog.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" && event.repeat) { event.preventDefault(); event.stopPropagation(); }
+  }, true);
   dialog.addEventListener("click", (event) => {
     if (openedMenu && !openedMenu.row.contains(event.target)) closeMenu();
   });
@@ -30,14 +34,26 @@ export function openEditor(services, original = null, captured = null) {
   });
   const addButton = button("＋ 링크 직접 추가", () => { addForm.hidden = false; addButton.hidden = true; urlInput.focus(); }, "btn full add-link-button");
   const urlInput = el("input", { type: "text", placeholder: "https://... 또는 C:\\자료\\강의.pdf", "aria-label": "추가할 링크 주소", "aria-describedby": "link-address-hint" });
-  const addForm = el("div", { className: "add-link-form", hidden: true }, field("웹 주소 또는 파일 경로", urlInput), el("p", { id: "link-address-hint", className: "muted" }, "브라우저 주소창의 file:/// 주소나 파일의 전체 경로를 붙여넣으세요. 파일을 옮기면 경로도 수정해야 해요."), button("추가", () => {
+  function addLink() {
     try {
       const url = pageUrl(urlInput.value);
       if (rows.filter((p) => p.selected).length >= 10) throw new Error("페이지는 최대 10개까지 선택할 수 있어요.");
       rows.push({ id: crypto.randomUUID(), title: pageTitle(url), url, openMode: "tab", dualGroupId: null, selected: true });
       urlInput.value = ""; addForm.hidden = true; addButton.hidden = false; dirty = true; sheet.error(""); renderRows();
-    } catch (error) { sheet.error(error.message); }
-  }, "btn primary full"));
+      (name.value.trim() ? saveButton : name).focus();
+    } catch (error) { sheet.error(error.message); urlInput.focus(); }
+  }
+  const addForm = el("div", { className: "add-link-form", hidden: true }, field("웹 주소 또는 파일 경로", urlInput), el("p", { id: "link-address-hint", className: "muted" }, "웹 주소나 파일의 전체 경로를 넣고 Enter로 추가하세요. 추가 후 Enter를 한 번 더 누르면 저장돼요. 파일을 옮기면 경로도 수정해야 해요."), button("추가", addLink, "btn primary full"));
+  urlInput.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" || event.isComposing || event.keyCode === 229) return;
+    event.preventDefault(); addLink();
+  });
+  name.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" || event.isComposing || event.keyCode === 229) return;
+    event.preventDefault();
+    if (!addForm.hidden && urlInput.value.trim()) { urlInput.focus(); return; }
+    saveButton.click();
+  });
 
   function renderRows() {
     closeMenu();
@@ -90,11 +106,12 @@ export function openEditor(services, original = null, captured = null) {
 
   sheet.body.classList.add("study-widget");
   sheet.body.append(field("작업공간 이름", name), el("h3", {}, original ? "작업공간에 담긴 페이지" : "작업공간에 넣을 페이지"), count, list, addButton, addForm);
-  sheet.footer.append(button("저장", (event) => busy(event.currentTarget, async () => {
+  const saveButton = button("저장", (event) => busy(event.currentTarget, async () => {
     const value = workspace({ name: name.value, pages: rows.filter((p) => p.selected) });
     await services.workspaceStore.save({ ...value, ...(original ? { id: original.id, updatedAt: original.updatedAt } : {}) });
     dirty = false; sheet.close(true); services.toast("작업공간을 저장했어요.");
-  }, sheet.error), "btn primary full"));
+  }, sheet.error), "btn primary full");
+  sheet.footer.append(saveButton);
   renderRows(); name.focus();
   if (!original && !captured) {
     services.browser.currentTabs().then((result) => {
