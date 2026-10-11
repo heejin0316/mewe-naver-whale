@@ -1,0 +1,29 @@
+name: 오류 제보
+description: ME:WE 사용 중 발생한 문제를 알려 주세요.
+title: "[오류] "
+body:
+  - type: markdown
+    attributes:
+      value: "공유 코드·개인 URL·파일 경로·인증 토큰을 공개하지 마세요. 보안 취약점과 개인정보 문의는 h33jin.jeong@gmail.com으로 보내 주세요."
+  - type: input
+    id: environment
+    attributes:
+      label: 사용 환경
+      description: 앱 버전, 웨일 버전, 운영체제
+      placeholder: "ME:WE 0.3.0 / 웨일 버전 / Windows 또는 macOS 버전"
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 재현 순서
+      description: 어떤 버튼을 어떤 순서로 눌렀는지 알려 주세요.
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: 기대한 결과와 실제 결과
+      description: 오류 문구 또는 개인정보를 가린 화면을 첨부해 주세요.
+    validations:
+      required: true

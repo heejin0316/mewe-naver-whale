@@ -16,11 +16,13 @@
 
 ## 지금 필요한 결정
 
-1. 운영자 표시명을 확정합니다. 문의 이메일은 `h33jin.jeong@gmail.com`입니다.
+운영팀 **ewhale**, 개발자 **정희진**, 문의 **h33jin.jeong@gmail.com**으로 확정했습니다. 코드는 [MIT](../LICENSE), 로고는 [별도 정책](brand-policy.md)을 적용합니다.
+
+1. 최종 로고와 색상을 선택하고 앱·README·스토어 이미지를 함께 갱신합니다.
 2. Firebase 콘솔에서 실제 Firestore 위치를 확인합니다. Authentication의 미국 처리와 함께 개인정보 안내를 마무리합니다.
 3. 공유 문서·익명 계정·문의 메일의 최대 보관 기간과 삭제 주기를 정합니다. 자동 삭제가 없으므로 실행 가능한 운영 절차가 필요합니다.
-4. 공유본 삭제·중단 기능과 개인정보 요청 시 본인 확인 방법을 마무리합니다. 받는 사람이 이미 저장한 복사본은 회수할 수 없습니다.
-5. 다른 사용자의 웨일에서 운영 Firebase 공유·받기를 확인하고 최종 화면을 촬영합니다.
+4. 개인정보 요청 시 본인 확인 방법과 삭제·중단 처리 절차를 확정합니다. 앱 내 철회 기능은 추가 개선안이며 받는 사람이 저장한 복사본은 회수할 수 없습니다.
+5. 최종 ZIP으로 다른 사용자의 웨일에서 운영 Firebase 공유·받기를 확인하고 화면을 촬영합니다. 팀원에게 받은 정상 동작 피드백과 최종 후보 시험 기록을 구분합니다.
 
 ## 앱과 문서의 연결
 
@@ -43,4 +45,6 @@ node scripts/build-privacy.mjs
 
 포장 구성만 확인하려면 `powershell -NoProfile -File scripts/package-preview.ps1`을 실행합니다. 새 `release/preview-*` 폴더에 ZIP과 아이콘을 만들며, 원본이나 기존 결과를 삭제하지 않습니다. 이 ZIP은 **미완료 사항이 포함된 포장 확인본**입니다.
 
-공식 기준: [심사 가이드](https://whale.dev/review_guides/), [등록 안내](https://developers.whale.naver.com/distribution/). 확인일: 2026-10-11.
+전체 문서는 [문서 안내](README.md), 버전·ZIP 검증은 [배포 절차](releasing.md)를 참고하세요.
+
+공식 기준: [심사 가이드](https://whale.dev/review_guides/), [등록 안내](https://developers.whale.naver.com/distribution/). 확인일: 2026-10-12.

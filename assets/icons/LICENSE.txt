@@ -1,0 +1,16 @@
+ME:WE brand assets
+Copyright (c) 2026 정희진 (ewhale). All rights reserved.
+
+The logo and icon artwork in this directory is excluded from the repository's
+MIT License. The MIT License continues to apply to the application source code.
+
+You may display unmodified assets to identify, review, or document the official
+ME:WE application, including in screenshots. Personal installation and use of
+the official application with its bundled assets is permitted.
+
+Redistribution of these assets in another application, modification, or use as
+the branding of a fork requires prior permission. No endorsement is granted.
+Use your own name and artwork when distributing a modified application.
+
+Permission requests: h33jin.jeong@gmail.com
+See docs/brand-policy.md in the source repository for the Korean policy.

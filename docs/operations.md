@@ -1,6 +1,6 @@
 # ME:WE 공유 데이터 운영 절차
 
-문의 창구: h33jin.jeong@gmail.com. 이 절차는 운영자가 직접 수행하는 준비안이며 자동화가 설정된 상태가 아닙니다. Firebase Spark를 유지하고 Cloud Functions·Storage 업로드·유료 TTL은 사용하지 않습니다.
+운영팀: **ewhale** · 개발자: **정희진** · 문의 창구: **h33jin.jeong@gmail.com**. 이 절차는 운영자가 직접 수행하는 준비안이며 자동화가 설정된 상태가 아닙니다. Firebase Spark를 유지하고 Cloud Functions·Storage 업로드·유료 TTL은 사용하지 않습니다.
 
 ## 삭제 및 처리 정지 요청
 

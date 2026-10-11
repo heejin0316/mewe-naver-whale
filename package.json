@@ -3,8 +3,16 @@
   "version": "0.3.0",
   "private": true,
   "type": "module",
+  "description": "학습 페이지를 저장하고 다시 여는 네이버 웨일 사이드바 작업공간 앱",
+  "license": "MIT",
+  "author": "정희진 (ewhale)",
+  "repository": { "type": "git", "url": "https://github.com/heejin0316/mewe-naver-whale.git" },
+  "homepage": "https://github.com/heejin0316/mewe-naver-whale#readme",
+  "bugs": { "url": "https://github.com/heejin0316/mewe-naver-whale/issues", "email": "h33jin.jeong@gmail.com" },
+  "engines": { "node": ">=20" },
   "scripts": {
     "test": "node tests/all.test.js",
+    "check": "node scripts/check-repo.mjs",
     "test:rules": "node tests/sharing-rules.test.js"
   }
 }

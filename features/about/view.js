@@ -16,7 +16,7 @@ export function openAbout(modal) {
   sheet.body.classList.add("about-content");
   const version = api?.runtime?.getManifest?.().version || "0.3.0";
   sheet.body.append(el("h3", {}, "ME:WE"), el("p", { className: "muted" }, `버전 ${version}`),
-    el("p", {}, "열어둔 학습 페이지를 저장하고 다시 여는 개인 제작 사이드바 확장앱입니다. 네이버 또는 이화여자대학교의 공식 앱이 아닙니다."),
+    el("p", {}, "열어둔 학습 페이지를 저장하고 다시 여는 사이드바 확장앱입니다. 운영팀 ewhale · 개발자 정희진. 네이버 또는 이화여자대학교의 공식 앱이 아닙니다."),
     el("h3", {}, "문의 및 삭제 요청"), el("a", { href: `mailto:${supportEmail}` }, supportEmail),
     el("p", {}, "공유 데이터 삭제·처리 정지 요청이나 부적절한 공유 내용 신고는 이메일로 보내 주세요. 비밀번호나 인증 토큰은 보내지 마세요."),
     el("h3", {}, "권한 사용 이유"),

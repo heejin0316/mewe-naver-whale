@@ -1,0 +1,17 @@
+name: 개선 제안
+description: 더 편하게 쓰기 위한 제안을 남겨 주세요.
+title: "[제안] "
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 불편한 점
+      description: 어떤 상황에서 불편했는지 알려 주세요. 개인 자료는 제외해 주세요.
+    validations:
+      required: true
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: 원하는 사용 방식
+    validations:
+      required: true
