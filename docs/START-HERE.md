@@ -10,6 +10,8 @@
 - [스토어 설명](store-description.md), [심사 설명](review-notes.md), [제출 체크리스트](release-checklist.md)
 - 개인정보 공개 주소: https://heejin0316.github.io/mewe-naver-whale/privacy/
 
+2026-10-12 GitHub Pages main/docs 배포 성공 및 비인증 HTTP 200·최신 정책 내용을 확인했습니다.
+
 ## 반영한 확인 결과
 
 사용자가 Firestore 서울 설정, 두 사용자 간 공유 정상 작동, 최근 팝업 오류 해결을 확인했습니다. 공유하기와 공유받기에는 기본 미선택 동의 체크박스가 있으며, 동의 전에는 인증·조회·생성 요청을 보내지 않습니다. 동의하지 않아도 개인 작업공간은 사용할 수 있습니다.
