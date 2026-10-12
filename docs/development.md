@@ -66,10 +66,13 @@ node tests/native-sharing.cjs
 
 ```powershell
 node scripts/build-privacy.mjs
+node scripts/build-icons.cjs
 node scripts/capture-readme.cjs
 ```
 
-첫 명령은 `PRIVACY.md`와 `docs/privacy/index.html`을 생성합니다. 둘째 명령은 Playwright로 실제 사이드바에 예시 데이터를 표시해 README 이미지를 만듭니다. 외부 서버에 공유 문서를 생성하지 않으며, 웨일 네이티브 기능의 검증 자료는 아닙니다.
+첫 명령은 `PRIVACY.md`와 `docs/privacy/index.html`을 생성합니다. 아이콘 생성은 Playwright로 `assets/icons/mark.svg`를 16·20·24·32·40·48·64·96·128·256·512px PNG로 렌더링합니다. 마지막 명령은 실제 사이드바에 예시 데이터를 표시해 README 이미지를 만듭니다. 외부 서버에 공유 문서를 생성하지 않으며, 웨일 네이티브 기능의 검증 자료는 아닙니다.
+
+웨일 5.39 관리 화면은 기본 48px 항목을 70 CSS px로 표시하므로 `manifest.icons[48]`에도 128px 원본을 연결합니다. 큰 아이콘 항목만 추가하면 기존 48px 파일이 계속 선택되므로 이 연결을 유지합니다. 사이드바에는 화면 배율별 실제 크기를 등록하며 스토어 업로드용 `icon128.png`는 정확히 128×128을 유지합니다.
 
 ## 제출 전
 

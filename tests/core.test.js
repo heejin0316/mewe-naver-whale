@@ -4,7 +4,7 @@ import { pageUrl, pageTitle, workspace } from "../shared/validation.js";
 import { mutateWorkspaces } from "../features/study-widget/controller.js";
 import { launchWorkspace } from "../features/study-widget/launcher.js";
 import { serialQueue } from "../shared/storage.js";
-import { groupPages, prepareRows } from "../features/study-widget/page-groups.js";
+import { groupPages, prepareRows, selectedPages } from "../features/study-widget/page-groups.js";
 import { closeTrackedTabs } from "../features/study-widget/closer.js";
 const page = (id, extra = {}) => ({ id, title: `페이지 ${id}`, url: `https://example.com/${id}`, openMode: "tab", dualGroupId: null, ...extra });
 const sample = () => ({ name: "이화의 논문 📚", pages: [page("a"), page("b")] });
@@ -96,7 +96,7 @@ test("감지된 듀얼탭은 생성·저장·수정·실행까지 한 쌍으로 
   assert.equal(result.dualGroupsOpened, 1);
 });
 
-test("10페이지 경계에서도 듀얼탭의 한쪽만 선택하거나 설정을 없애지 않는다", () => {
+test("처음 가져올 때 10페이지 경계에서 듀얼탭을 임의로 나누지 않는다", () => {
   const captured = [...Array.from({ length: 9 }, (_, i) => page(String(i))), page("left", { openMode: "dual", dualGroupId: "B" }), page("right", { openMode: "dual", dualGroupId: "B" })];
   const draft = prepareRows(captured);
   assert.equal(draft.filter((p) => p.selected).length, 9);
@@ -105,6 +105,33 @@ test("10페이지 경계에서도 듀얼탭의 한쪽만 선택하거나 설정�
   const full = prepareRows(captured.slice(1));
   assert.equal(full.filter((p) => p.selected).length, 10);
   assert.ok(full.slice(-2).every((p) => p.selected));
+});
+
+test("듀얼탭 어느 쪽을 해제해도 남은 쪽은 일반탭으로 저장·실행되고 재선택하면 쌍이 복원된다", async () => {
+  const captured = [page("left", { openMode: "dual", dualGroupId: "A" }), page("right", { openMode: "dual", dualGroupId: "A" }), page("single")];
+  for (const removedIndex of [0, 1]) {
+    const draft = prepareRows(captured);
+    draft[removedIndex].selected = false;
+    const remainingId = captured[1 - removedIndex].id;
+    const [saved] = mutateWorkspaces([], "WORKSPACE_SAVE", { name: "한쪽만", pages: selectedPages(draft) });
+    assert.deepEqual(saved.pages.map(p => [p.id, p.openMode, p.dualGroupId]), [[remainingId, "tab", null], ["single", "tab", null]]);
+    const singles = [];
+    await launchWorkspace(saved, { currentWindow: async () => ({ id: 1 }), create: async tab => { singles.push(tab.url); return { id: singles.length }; }, createDual: async () => assert.fail("한쪽만 선택한 페이지가 듀얼탭으로 실행됨"), activate: async () => {} });
+    assert.deepEqual(singles, [captured[1 - removedIndex].url, captured[2].url]);
+    draft[removedIndex].selected = true;
+    assert.deepEqual(workspace({ name: "복원", pages: selectedPages(draft) }).pages, captured);
+  }
+});
+
+test("9개 일반 페이지와 듀얼탭 한쪽을 선택해 10개로 저장할 수 있다", () => {
+  const draft = prepareRows([...Array.from({ length: 9 }, (_, i) => page(String(i))), page("left", { openMode: "dual", dualGroupId: "B" }), page("right", { openMode: "dual", dualGroupId: "B" })]);
+  draft[9].selected = true;
+  const saved = workspace({ name: "10개", pages: selectedPages(draft) });
+  assert.equal(saved.pages.length, 10);
+  assert.equal(saved.pages.at(-1).id, "left");
+  assert.equal(saved.pages.at(-1).openMode, "tab");
+  draft[10].selected = true;
+  assert.throws(() => workspace({ name: "11개", pages: selectedPages(draft) }), /1~10개/);
 });
 test("실행 가능한 스킴·자격정보 URL 거부", () => {
   for (const url of ["javascript:alert(1)", "data:text/html,x", "file://server/share/a.pdf", "file:///", "whale://settings", "https://user:pass@example.com"]) assert.throws(() => pageUrl(url));

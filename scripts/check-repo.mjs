@@ -46,12 +46,14 @@ for (const file of files) {
   }
 }
 for (const file of [manifest.background.service_worker, manifest.sidebar_action.default_page, "LICENSE", "assets/icons/LICENSE.txt"]) reference("manifest.json", file);
-for (const [size, file] of Object.entries({ ...manifest.icons, ...manifest.sidebar_action.default_icon })) {
+for (const iconSet of [manifest.icons, manifest.sidebar_action.default_icon]) for (const [size, file] of Object.entries(iconSet)) {
   reference("manifest.json", file);
   const bytes = fs.readFileSync(path.join(root, file));
   assert.equal(bytes.subarray(0, 8).toString("hex"), "89504e470d0a1a0a", `${file}: PNG 형식 확인`);
-  assert.equal(bytes.readUInt32BE(16), Number(size), `${file}: 너비`);
-  assert.equal(bytes.readUInt32BE(20), Number(size), `${file}: 높이`);
+  // A larger source is intentional for Whale's enlarged management-page slot.
+  const width = bytes.readUInt32BE(16), height = bytes.readUInt32BE(20);
+  assert.equal(width, height, `${file}: 정사각형 아이콘`);
+  assert.ok(width >= Number(size), `${file}: 표시 크기보다 작은 원본`);
 }
 execFileSync(process.execPath, [path.join(root, "scripts/build-privacy.mjs"), "--check"], { stdio: "inherit" });
 console.log(`저장소 점검 통과: 버전 ${manifest.version}, 아이콘 크기, 로컬 링크·참조, 라이선스 고지`);

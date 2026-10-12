@@ -1,0 +1,26 @@
+ME:WE 0.3.0 전달·스토어 업로드 자료
+운영팀 ewhale / 개발자 정희진 / h33jin.jeong@gmail.com
+
+1. 팀원 설치 및 스토어 앱 패키지: MEWE-0.3.0.zip
+2. 스토어 아이콘: store-icon128.png (128×128 PNG)
+3. 스토어 스크린샷: screenshots 폴더 (1280×800 PNG 2장)
+4. 팀원 설치 안내: 01-팀원설치안내.txt
+5. 스토어 제출 담당자 안내: 02-스토어제출안내.txt
+6. 상세 설명 복사용: store-description.txt
+7. 파일 변조·누락 확인용: SHA256SUMS.txt
+
+앱 ZIP은 팀원 설치와 스토어 업로드에 동일하게 사용합니다.
+이 delivery 폴더 전체나 team-kit.zip을 스토어 앱 패키지로 올리지 마세요.
+GitHub의 Code → Download ZIP도 제출용 앱 ZIP과 다릅니다.
+
+현재 상태: 전달·검토 가능한 제출 후보입니다. 심사 완료본이나 출시본이 아닙니다.
+개인정보 정책 확정·공개, 공유받기 인증 안내, 삭제 운영 절차, 운영 Firebase 및
+실제 사이드바 재열기 확인이 남아 있으므로 리뷰 요청은 보완 후 진행하세요.
+코드·정책을 수정하면 앱 ZIP과 관련 이미지·안내를 다시 생성해야 합니다.
+
+스크린샷은 격리된 웨일에서 실제 앱 UI에 예시 데이터를 넣고 설명 영역과 함께
+촬영했습니다. 개인 자료·로그인 정보·실제 공유 코드는 포함하지 않았습니다.
+
+최신 소스 및 상세 점검:
+https://github.com/heejin0316/mewe-naver-whale
+https://github.com/heejin0316/mewe-naver-whale/blob/main/docs/release-checklist.md

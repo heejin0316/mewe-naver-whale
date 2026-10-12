@@ -12,6 +12,17 @@
 
 ## 2. 검증 및 패키징
 
+팀원 전달·스토어 자료는 저장소의 [delivery 폴더](../delivery/)에서 확인합니다. 설치용 앱 ZIP은 스토어 업로드에도 동일하게 사용하며, team-kit ZIP은 안내·아이콘·이미지를 함께 보내는 용도입니다. 스토어에는 team-kit ZIP을 올리지 않습니다.
+
+```powershell
+node scripts/capture-store.cjs
+powershell -NoProfile -File scripts/package-delivery.ps1
+```
+
+첫 명령은 격리된 웨일에서 실제 앱 UI와 예시 데이터를 1280×800 설명 이미지 2장으로 촬영합니다. 두 번째 명령은 delivery의 앱 ZIP·아이콘·상세 설명·SHA256 목록을 갱신하고 `release/preview-*/`에 전체 전달 묶음 `MEWE-0.3.0-team-kit.zip`을 만듭니다. 개인정보 미완료 안내는 유지됩니다. 압축 해제 결과의 모든 파일을 원본과 해시 비교합니다. 최종 정책/UI가 바뀌면 두 명령을 다시 실행하세요.
+
+포장만 따로 확인하려면 기존 도구를 사용할 수 있습니다.
+
 ```powershell
 npm test
 npm run check

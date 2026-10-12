@@ -38,7 +38,7 @@ export function mount(container, services) {
         const groups = groupPages(w.pages);
         const dualCount = groups.filter((group) => group.dual).length;
         const card = el("article", { className: "card workspace-card", draggable: true, tabIndex: 0, "data-workspace-id": w.id, "aria-label": w.name, "aria-keyshortcuts": "Alt+ArrowUp Alt+ArrowDown" });
-        const tone = [...w.id].reduce((sum, char) => sum + char.charCodeAt(0), 0) % 3;
+        const tone = [...w.id].reduce((sum, char) => sum + char.charCodeAt(0), 0) % 7;
         const folder = el("span", { className: `workspace-symbol tone-${tone}`, "aria-hidden": "true" }, icon("folder"));
         const menu = el("div", { className: "workspace-menu", hidden: true });
         const toggle = button("⋮", () => { menu.hidden = !menu.hidden; }, "icon-button");

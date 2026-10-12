@@ -1,6 +1,6 @@
 import { el, button, field, busy } from "../../shared/dom.js";
 import { pageUrl, pageTitle, workspace } from "../../shared/validation.js";
-import { groupPages, prepareRows } from "./page-groups.js";
+import { groupPages, prepareRows, selectedPages } from "./page-groups.js";
 import { icon } from "../../shared/icons.js";
 
 export function openEditor(services, original = null, captured = null) {
@@ -55,7 +55,7 @@ export function openEditor(services, original = null, captured = null) {
     saveButton.click();
   });
 
-  function renderRows() {
+  function renderRows(focusId = null) {
     closeMenu();
     list.replaceChildren();
     const selectedCount = rows.filter((p) => p.selected).length;
@@ -63,22 +63,23 @@ export function openEditor(services, original = null, captured = null) {
     const dualCount = groups.filter((group) => group.dual && group.pages.every((p) => p.selected)).length;
     count.textContent = selectedCount + (original ? "개 페이지" : "개 페이지 선택") + (dualCount ? " · 듀얼탭 " + dualCount + "개" : "");
     if (!rows.length && original) list.append(el("p", { className: "muted page-list-empty" }, "페이지가 없어요. 저장하려면 링크를 추가해 주세요."));
+    let focusTarget;
     groups.forEach((group) => {
       group.pages.forEach((page, side) => {
         const checked = el("input", { type: "checkbox", checked: page.selected, "aria-label": page.title + " 작업공간에 넣기" });
         checked.addEventListener("change", () => {
-          const otherCount = rows.filter((p) => p.selected && !group.pages.includes(p)).length;
-          if (checked.checked && otherCount + group.pages.length > 10) {
+          const otherCount = rows.filter((p) => p.selected && p !== page).length;
+          if (checked.checked && otherCount >= 10) {
             checked.checked = false;
-            sheet.error(group.dual ? "듀얼탭의 두 페이지를 함께 선택하려면 2개 자리가 필요해요. 최대 10개까지 저장할 수 있어요." : "페이지는 최대 10개까지 선택할 수 있어요.");
+            sheet.error("페이지는 최대 10개까지 선택할 수 있어요.");
             return;
           }
-          group.pages.forEach((p) => { p.selected = checked.checked; });
-          dirty = true; sheet.error(""); renderRows();
+          page.selected = checked.checked;
+          dirty = true; sheet.error(""); renderRows(page.id);
         });
         const row = el(original ? "div" : "label", { className: "page-choice" + (original ? " page-choice-edit" : "") }, original ? null : checked,
           el("span", { className: "page-choice-copy" }, el("strong", {}, page.title), el("small", {}, page.url)));
-        if (group.dual) row.append(el("span", { className: "dual-badge", "data-side": side === 0 ? "a" : "b", title: (side === 0 ? "왼쪽" : "오른쪽") + " 페이지" + (original ? "" : " · 두 페이지를 함께 저장해요") }, "듀얼탭 " + (side === 0 ? "A" : "B")));
+        if (group.dual && group.pages.every((p) => p.selected)) row.append(el("span", { className: "dual-badge", "data-side": side === 0 ? "a" : "b", title: (side === 0 ? "왼쪽" : "오른쪽") + " 페이지" + (original ? "" : " · 한쪽만 선택하면 일반 페이지로 저장해요") }, "듀얼탭 " + (side === 0 ? "A" : "B")));
         if (original) {
           const menu = el("div", { className: "page-menu", role: "menu", "aria-label": page.title + " 메뉴", hidden: true });
           const toggle = button("⋮", () => {
@@ -100,14 +101,16 @@ export function openEditor(services, original = null, captured = null) {
           row.addEventListener("focusout", (event) => { if (!row.contains(event.relatedTarget)) closeMenu(); });
         }
         list.append(row);
+        if (!original && page.id === focusId) focusTarget = checked;
       });
     });
+    focusTarget?.focus();
   }
 
   sheet.body.classList.add("study-widget");
   sheet.body.append(field("작업공간 이름", name), el("h3", {}, original ? "작업공간에 담긴 페이지" : "작업공간에 넣을 페이지"), count, list, addButton, addForm);
   const saveButton = button("저장", (event) => busy(event.currentTarget, async () => {
-    const value = workspace({ name: name.value, pages: rows.filter((p) => p.selected) });
+    const value = workspace({ name: name.value, pages: selectedPages(rows) });
     await services.workspaceStore.save({ ...value, ...(original ? { id: original.id, updatedAt: original.updatedAt } : {}) });
     dirty = false; sheet.close(true); services.toast("작업공간을 저장했어요.");
   }, sheet.error), "btn primary full");

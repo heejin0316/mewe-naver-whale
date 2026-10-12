@@ -1,1 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64"><rect width="64" height="64" rx="19" fill="#075b46"/><path d="M14 43V22h6l12 13 12-13h6v21h-7V32L32 44 21 32v11z" fill="#fff"/><circle cx="49" cy="15" r="4" fill="#fff"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="mint" x1="4" y1="2" x2="60" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#63DECF"/>
+      <stop offset="0.48" stop-color="#36AE92"/>
+      <stop offset="1" stop-color="#2B98B6"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="19" fill="url(#mint)"/>
+  <path d="M16 43V23a3 3 0 0 1 5.3-1.9L32 34l10.7-12.9A3 3 0 0 1 48 23v20" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

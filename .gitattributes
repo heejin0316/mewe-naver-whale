@@ -1,0 +1,2 @@
+# Preserve published package checksums across checkout platforms.
+delivery/** -text

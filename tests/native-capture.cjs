@@ -1,7 +1,7 @@
 // Isolated Whale profile: no access to the user's installed extension or tabs.
 const fs = require("node:fs"), os = require("node:os"), path = require("node:path"), http = require("node:http"), assert = require("node:assert/strict");
 const { chromium } = require(process.env.MEWE_NODE_MODULES ? path.join(process.env.MEWE_NODE_MODULES, "playwright") : "playwright");
-const root = path.resolve(__dirname, "..");
+const root = process.env.MEWE_EXTENSION_ROOT || path.resolve(__dirname, "..");
 const profile = fs.mkdtempSync(path.join(os.tmpdir(), "mewe-native-test-"));
 const server = http.createServer((req, res) => {
   const name = ({ "/ewha": "이화여대", "/yonsei": "연세대", "/chungnam": "충남대" })[req.url] || "테스트";
@@ -55,6 +55,39 @@ const server = http.createServer((req, res) => {
       assert.deepEqual(result.pages.map(p => p.openMode), ["dual", "dual", "tab"], focus);
       assert.equal(result.autoPaired, 1, focus);
       console.log(`PASS Whale ${version}: ${focus} focused, no navigation records, all three pages in left/right/tab order`);
+    }
+    // Six real pages, matching the reported selection failure. Exercise the
+    // native checkbox, its row label, and keyboard activation in the loaded app.
+    for (const suffix of ["one", "two", "three"]) {
+      const page = await context.newPage(); await page.goto(base + "/" + suffix);
+    }
+    await extension.bringToFront();
+    for (const [removed, survivor] of [["이화여대", "연세대"], ["연세대", "이화여대"]]) {
+      await extension.getByRole("button", { name: "지금 작업공간 저장", exact: true }).click();
+      await extension.getByText("6개 페이지 선택 · 듀얼탭 1개", { exact: true }).waitFor();
+      const checkbox = extension.getByRole("checkbox", { name: removed + " 작업공간에 넣기", exact: true });
+      const kept = extension.getByRole("checkbox", { name: survivor + " 작업공간에 넣기", exact: true });
+      const assertIndependent = async () => {
+        await extension.getByText("5개 페이지 선택", { exact: true }).waitFor();
+        assert.equal(await checkbox.isChecked(), false);
+        assert.equal(await kept.isChecked(), true);
+        assert.equal(await extension.locator(".dual-badge").count(), 0);
+      };
+      await checkbox.uncheck(); await assertIndependent();
+      await checkbox.check();
+      await extension.locator(".page-choice").filter({ has: checkbox }).locator("strong").click();
+      await assertIndependent();
+      await checkbox.check(); await checkbox.press("Space"); await assertIndependent();
+      await extension.getByLabel("작업공간 이름", { exact: true }).fill("한쪽만 저장 " + survivor);
+      await extension.getByRole("button", { name: "저장", exact: true }).click();
+      await extension.getByRole("dialog").waitFor({ state: "detached" });
+      const saved = await extension.evaluate(async () => (await chrome.storage.local.get("mewe.workspaces"))["mewe.workspaces"]);
+      const workspace = saved.find(w => w.name === "한쪽만 저장 " + survivor);
+      assert.equal(workspace.pages.length, 5);
+      assert.equal(workspace.pages.some(p => p.title === removed), false);
+      assert.ok(workspace.pages.some(p => p.title === survivor));
+      assert.ok(workspace.pages.every(p => p.openMode === "tab" && p.dualGroupId === null));
+      console.log(`PASS Whale ${version}: uncheck ${removed} by checkbox/label/keyboard; ${survivor} stays selected and saves as a regular page (6 -> 5)`);
     }
   } finally { if (context) await context.close(); server.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

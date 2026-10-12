@@ -51,8 +51,18 @@ const server = http.createServer((req, res) => {
     await page.getByLabel("작업공간 이름").fill("학교");
     const pair = page.getByRole("checkbox", { name: "이화여대 : 네이버 검색 작업공간에 넣기" });
     await pair.uncheck();
-    await page.getByText("1개 페이지 선택", { exact: true }).waitFor();
+    await page.getByText("2개 페이지 선택", { exact: true }).waitFor();
+    const rightCheckbox = page.getByRole("checkbox", { name: "연세대 : 네이버 검색 작업공간에 넣기" });
+    assert.equal(await rightCheckbox.isChecked(), true);
+    assert.equal(await page.locator(".page-choice .dual-badge").count(), 0);
+    assert.equal(await pair.evaluate(node => document.activeElement === node), true);
     await pair.check();
+    await page.getByText("3개 페이지 선택 · 듀얼탭 1개", { exact: true }).waitFor();
+    await rightCheckbox.uncheck();
+    assert.equal(await pair.isChecked(), true);
+    await page.getByText("2개 페이지 선택", { exact: true }).waitFor();
+    assert.equal(await page.locator(".page-choice .dual-badge").count(), 0);
+    await rightCheckbox.check();
     await page.getByText("3개 페이지 선택 · 듀얼탭 1개", { exact: true }).waitFor();
     fs.mkdirSync(path.join(root, "test-results"), { recursive: true });
     await page.screenshot({ path: path.join(root, "test-results/dual-editor.png") });
@@ -142,9 +152,65 @@ const server = http.createServer((req, res) => {
     await page.getByText("페이지가 없어요. 저장하려면 링크를 추가해 주세요.", { exact: true }).waitFor();
     await page.getByRole("button", { name: "저장", exact: true }).click();
     await page.getByRole("alert").filter({ hasText: "페이지는 1~10개 선택해 주세요." }).waitFor();
-    page.once("dialog", dialog => dialog.accept());
+    page.on("dialog", dialog => { errors.push("Unexpected browser dialog: " + dialog.message()); dialog.dismiss(); });
+    // Sidebar reopen may deliver a click without a pointer press in this document.
+    await page.locator("dialog.sheet").dispatchEvent("click", { clientX: -1, clientY: -1, pointerId: 1 });
+    assert.equal(await page.locator(".discard-dialog").count(), 0, "unpaired backdrop click must not ask to discard");
+    const simulateVisibility = async hidden => page.evaluate(hidden => {
+      Object.defineProperty(document, "hidden", { configurable: true, value: hidden });
+      document.dispatchEvent(new Event("visibilitychange"));
+    }, hidden);
+    await simulateVisibility(true);
+    await page.locator("dialog.sheet").dispatchEvent("cancel", { cancelable: true });
+    await simulateVisibility(false);
+    assert.equal(await page.locator(".discard-dialog").count(), 0, "hide/show must not queue a confirmation");
+    assert.equal(await page.locator(".page-menu-toggle").count(), 0, "draft removals survive hide/show");
+    assert.equal(await page.evaluate(() => window.saved[0].pages.length), 2, "hiding must not save removals");
     await page.getByRole("button", { name: "닫기", exact: true }).click();
+    const discard = page.getByRole("dialog", { name: "저장하지 않고 닫을까요?", exact: true });
+    await discard.waitFor();
+    assert.equal(await discard.getByRole("button", { name: "계속 편집" }).evaluate(node => node === document.activeElement), true);
+    const rect = await discard.boundingBox();
+    assert.ok(rect.x >= 0 && rect.x + rect.width <= 320, "confirmation fits inside a narrow sidebar");
+    await page.screenshot({ path: path.join(root, "test-results/discard-confirmation-320.png") });
+    await discard.getByRole("button", { name: "계속 편집" }).click();
+    assert.equal(await page.locator(".page-menu-toggle").count(), 0, "cancel preserves unsaved removals");
+    assert.equal(await page.getByRole("button", { name: "닫기", exact: true }).evaluate(node => node === document.activeElement), true);
+    await page.keyboard.press("Escape");
+    await discard.waitFor();
+    await page.keyboard.press("Escape");
+    assert.equal(await page.locator("dialog[open]").count(), 1, "Escape returns to editor");
+    await page.getByRole("button", { name: "닫기", exact: true }).click();
+    await discard.waitFor();
+    await simulateVisibility(true); await simulateVisibility(false);
+    assert.equal(await page.locator(".discard-dialog").count(), 0, "existing confirmation is dismissed on hide");
+    await page.evaluate(() => { delete document.hidden; });
+    const sheetRect = await page.locator("dialog.sheet").boundingBox();
+    assert.ok(sheetRect.y > 0);
+    await page.mouse.click(10, sheetRect.y / 2);
+    await discard.waitFor();
+    await discard.getByRole("button", { name: "계속 편집" }).click();
+    await page.getByRole("button", { name: "닫기", exact: true }).click();
+    await discard.getByRole("button", { name: "닫기", exact: true }).click();
+    assert.equal(await page.locator("dialog[open]").count(), 0);
     assert.equal(await page.evaluate(() => window.saved[0].pages.length), 2);
+    for (const [removed, remaining] of [["이화여대", "연세대"], ["연세대", "이화여대"]]) {
+      await page.getByRole("button", { name: "지금 작업공간 저장", exact: true }).click();
+      const name = `${remaining}만 저장`;
+      await page.getByLabel("작업공간 이름").fill(name);
+      await page.getByRole("checkbox", { name: `${removed} : 네이버 검색 작업공간에 넣기` }).uncheck();
+      await page.getByText("2개 페이지 선택", { exact: true }).waitFor();
+      assert.equal(await page.getByRole("checkbox", { name: `${remaining} : 네이버 검색 작업공간에 넣기` }).isChecked(), true);
+      await page.screenshot({ path: path.join(root, `test-results/dual-one-side-${removed === "이화여대" ? "right" : "left"}.png`) });
+      await page.getByRole("button", { name: "저장", exact: true }).click();
+      await page.getByRole("button", { name: `${name} 메뉴` }).waitFor();
+      const pages = await page.evaluate(name => window.saved.find(w => w.name === name).pages, name);
+      assert.deepEqual(pages.map(p => [p.title, p.openMode, p.dualGroupId]), [[`${remaining} : 네이버 검색`, "tab", null], ["충남대 : 네이버 검색", "tab", null]]);
+      await page.getByRole("button", { name: `${name} 메뉴` }).click();
+      await page.getByRole("button", { name: "수정", exact: true }).click();
+      assert.equal(await page.locator(".page-choice .dual-badge").count(), 0);
+      await page.getByRole("button", { name: "닫기", exact: true }).click();
+    }
     await page.evaluate(async () => {
       const { openAbout } = await import("/features/about/view.js");
       const { modal } = await import("/shared/modal.js");
@@ -162,6 +228,6 @@ const server = http.createServer((req, res) => {
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
     await page.screenshot({ path: path.join(root, "test-results/privacy-page-320.png") });
     assert.deepEqual(errors, []);
-    console.log("PASS: captured pair UI, joint selection, persistence, edit menus, single removal, dual partner preserved, add after removal, empty save blocked, discard, Escape, 320px layout; simulated Whale API.");
+    console.log("PASS: captured pair UI, independent selection, pair restoration, persistence, edit menus, single removal, dual partner preserved, add after removal, empty save blocked, discard, Escape, 320px layout; simulated Whale API.");
   } finally { if (browser) await browser.close(); server.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });
