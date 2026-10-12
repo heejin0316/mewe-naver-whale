@@ -25,12 +25,12 @@ foreach ($file in $stagedFiles) {
 $description = Get-Content (Join-Path $sourceRoot 'docs\store-description.md') -Raw -Encoding UTF8
 $plainText = [regex]::Match($description, '(?s)```text\r?\n(.*?)\r?\n```').Groups[1].Value
 if (!$plainText) { throw 'Store description missing' }
-Set-Content (Join-Path $outputRoot 'store-description.txt') $plainText -Encoding UTF8
+[IO.File]::WriteAllText((Join-Path $outputRoot 'store-description.txt'), ($plainText.Replace("`r`n", "`n") + "`n"), [Text.UTF8Encoding]::new($false))
 $hashes = Get-ChildItem $outputRoot -Recurse -File | Where-Object { $_.Name -ne 'SHA256SUMS.txt' } | Sort-Object FullName | ForEach-Object {
   $relative = $_.FullName.Substring($outputRoot.Length + 1).Replace('\','/')
   "$((Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash)  $relative"
 }
-Set-Content (Join-Path $outputRoot 'SHA256SUMS.txt') $hashes -Encoding UTF8
+[IO.File]::WriteAllText((Join-Path $outputRoot 'SHA256SUMS.txt'), (($hashes -join "`n") + "`n"), [Text.UTF8Encoding]::new($false))
 $bundlePath = Join-Path $previewRoot "MEWE-$($manifest.version)-team-kit.zip"
 Compress-Archive -LiteralPath $outputRoot -DestinationPath $bundlePath
 Write-Output "App ZIP: $appZip"

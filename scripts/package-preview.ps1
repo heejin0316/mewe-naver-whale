@@ -20,7 +20,7 @@ Copy-Item -LiteralPath (Join-Path $sourceRoot 'assets\icons\icon128.png') -Desti
 Set-Content -LiteralPath (Join-Path $outputRoot 'README.txt') -Encoding utf8 -Value @"
 ME:WE 포장 확인본 — 스토어 제출 완료본이 아닙니다.
 제출 전 docs/release-checklist.md의 미완료 항목을 확인하세요.
-개인정보 처리방침 검토본이 포함되어 있습니다. 스토어 스크린샷은 별도 준비합니다.
+확정 개인정보 정책을 포함합니다. 스토어 자료는 delivery 폴더에서 확인하세요.
 코드: MIT / 로고: assets/icons/LICENSE.txt의 별도 정책 적용
 포함 파일 수: $($runtimeFiles.Count)
 SHA256: $((Get-FileHash -LiteralPath $zipPath -Algorithm SHA256).Hash)

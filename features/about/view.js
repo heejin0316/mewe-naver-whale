@@ -1,11 +1,12 @@
 import { el, button } from "../../shared/dom.js";
 import { api } from "../../shared/browser.js";
-import { privacy, supportEmail } from "../../shared/privacy-content.js";
+import { privacy, privacyUrl, supportEmail } from "../../shared/privacy-content.js";
 
 export function privacyDetails() {
   return el("details", { className: "privacy-details about-content" }, el("summary", {}, "개인정보 처리방침"),
     el("p", { className: "notice" }, privacy.status),
-    el("p", { className: "muted" }, `작성일 ${privacy.date}`),
+    el("p", { className: "muted" }, `시행일 ${privacy.date}`),
+    el("a", { href: privacyUrl, target: "_blank", rel: "noopener noreferrer" }, "개인정보 처리방침 웹페이지"),
     ...privacy.sections.map(section => el("section", {}, el("h3", {}, section.title),
       ...section.paragraphs.map(p => el("p", {}, p)),
       ...(section.links || []).map(link => el("a", { href: link.url, target: "_blank", rel: "noopener noreferrer" }, link.label)))));

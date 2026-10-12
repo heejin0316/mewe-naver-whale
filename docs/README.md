@@ -3,7 +3,7 @@
 | 대상 | 문서 |
 | --- | --- |
 | 처음 사용하는 분 | [사용 가이드](user-guide.md) |
-| 개인정보 확인 | [개인정보 처리방침 검토본](../PRIVACY.md) |
+| 개인정보 확인 | [개인정보 처리방침](../PRIVACY.md) |
 | 개발자 | [개발 및 테스트](development.md), [구조와 권한](architecture.md) |
 | 자체 서버 운영자 | [Firebase 설정](../FIREBASE_SETUP.md) |
 | 운영 담당자 | [운영 절차](operations.md), [보안 제보](../SECURITY.md) |

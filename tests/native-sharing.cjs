@@ -41,6 +41,9 @@ function token(uid){const n=Math.floor(Date.now()/1000);return [Buffer.from(JSON
     await sender.getByRole('article',{name:'공유 실험',exact:true}).getByRole('button',{name:'작업공간 공유',exact:true}).click();
     assert.equal(await sender.locator('.share-pages li').count(),3);assert.equal(await sender.locator('.share-excluded li').count(),1);
     assert.equal((await sender.locator('.sharing').textContent()).includes('file:///'),false);
+    assert.equal(await sender.getByRole('button',{name:'공유 코드 복사',exact:true}).isDisabled(),true);
+    assert.equal(users,0,'opening share does not authenticate before consent');
+    await sender.locator('.share-consent input').check();
     await sender.getByRole('button',{name:'공유 코드 복사',exact:true}).click();
     await sender.getByText('✓ 공유 코드가 복사되었어요.',{exact:true}).waitFor();
     const code=await sender.getByLabel('생성된 공유 코드').inputValue();assert.match(code,/^[A-Z2-9]{4}-[A-Z2-9]{4}-[A-Z2-9]{4}$/);
@@ -56,7 +59,14 @@ function token(uid){const n=Math.floor(Date.now()/1000);return [Buffer.from(JSON
     assert.equal(await sender.getByRole('button',{name:'공유 코드 복사',exact:true}).isDisabled(),true);
     await receiver.bringToFront();await receiver.setViewportSize({width:320,height:720});
     async function receive(){
-      await receiver.getByRole('button',{name:'공유 작업공간 받기',exact:true}).click();await receiver.getByLabel('공유 코드',{exact:true}).fill(code);await receiver.getByRole('button',{name:'작업공간 확인',exact:true}).click();await receiver.getByRole('button',{name:'바로 열기',exact:true}).waitFor();
+      await receiver.getByRole('button',{name:'공유 작업공간 받기',exact:true}).click();
+      await receiver.getByLabel('공유 코드',{exact:true}).fill(code);
+      const before=users;
+      assert.equal(await receiver.getByRole('button',{name:'작업공간 확인',exact:true}).isDisabled(),true);
+      await receiver.getByLabel('공유 코드',{exact:true}).press('Enter');
+      assert.equal(users,before,'Enter cannot bypass consent');
+      await receiver.locator('.share-consent input').check();
+      await receiver.getByRole('button',{name:'작업공간 확인',exact:true}).click();await receiver.getByRole('button',{name:'바로 열기',exact:true}).waitFor();
     }
     await receive();
     assert.equal(await receiver.getByLabel('공유 코드',{exact:true}).count(),0);assert.equal(await receiver.locator('.sharing .dual-badge').count(),0);

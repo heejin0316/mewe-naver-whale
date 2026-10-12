@@ -8,6 +8,17 @@ function pageList(pages) {
 }
 const accessNote = () => el("p", { className: "muted share-note" }, "로그인이 필요한 페이지는 받는 사람의 계정과 접근 권한이 필요해요.");
 
+function sharingConsent(sheet, onChange) {
+  const input = el("input", { type: "checkbox" });
+  input.addEventListener("change", onChange);
+  sheet.body.append(
+    el("p", { className: "muted share-note" }, "공유 인증을 위해 임시 사용자 식별 정보와 접속 정보가 미국에서 처리돼요. 동의하지 않아도 개인 작업공간은 사용할 수 있어요."),
+    privacyDetails(),
+    el("label", { className: "check-line share-consent" }, input, el("span", {}, "개인정보 처리방침을 확인했으며, 공유 기능의 개인정보 처리 및 국외 처리에 동의해요."))
+  );
+  return input;
+}
+
 export function openShare(services, value) {
   const prepared = prepareShare(value);
   const sheet = services.modal.open("작업공간 공유"); if (!sheet) return;
@@ -23,12 +34,14 @@ export function openShare(services, value) {
     el("li", {}, "로그인이 필요한 페이지는 받는 사람의 계정과 접근 권한이 필요해요."),
     el("li", {}, `코드를 아는 사람은 ${SHARE_DAYS}일 동안 페이지 목록을 볼 수 있어요.`),
     el("li", {}, "주소에 개인정보나 비공개 문서 접근 정보가 없는지 확인해 주세요."),
-    el("li", {}, "코드가 만료되어도 공유 데이터는 남아요. ", el("a", { href: `mailto:${supportEmail}` }, "삭제 요청"))),
-    el("p", { className: "muted share-note" }, "공유 코드 복사를 누르면 위 이름과 페이지 정보를 저장해 공유해요."), privacyDetails());
+    el("li", {}, "공유 데이터는 생성 후 최대 14일 이내 삭제돼요. ", el("a", { href: `mailto:${supportEmail}` }, "삭제 요청"))),
+    el("p", { className: "muted share-note" }, "공유 코드 복사를 누르면 위 이름과 페이지 정보를 저장해 공유해요."));
   const codeInput = el("input", { readOnly: true, "aria-label": "생성된 공유 코드", className: "share-code" });
   const result = el("div", { hidden: true }, field("공유 코드", codeInput), el("p", { className: "muted", role: "status" }));
   sheet.body.append(result);
   const copy = button("공유 코드 복사", (event) => busy(event.currentTarget, async () => {
+    if (!consent.checked) throw new Error("공유 기능에 필요한 정보 처리에 동의해 주세요.");
+    consent.disabled = true;
     sheet.error(""); copy.textContent = "공유 코드 준비 중…";
     try {
       if (!issued || Date.parse(issued.expiresAt) <= Date.now()) issued = await services.sharing.create(value);
@@ -42,9 +55,10 @@ export function openShare(services, value) {
         codeInput.focus(); codeInput.select();
         sheet.error("자동 복사를 완료하지 못했어요. 선택된 코드를 Ctrl+C로 복사하거나 다시 눌러 주세요.");
       }
-    } finally { copy.textContent = "공유 코드 복사"; }
+    } finally { copy.textContent = "공유 코드 복사"; consent.disabled = false; }
   }, sheet.error), "btn primary full");
-  copy.disabled = !prepared.pages.length;
+  const consent = sharingConsent(sheet, () => { copy.disabled = !prepared.pages.length || !consent.checked; });
+  copy.disabled = true;
   sheet.footer.append(copy);
 }
 
@@ -54,7 +68,9 @@ export function openReceive(services) {
   const input = el("input", { placeholder: "공유 코드를 입력하세요", maxLength: 40, autoComplete: "off", spellcheck: false, className: "share-code" });
   const check = button("작업공간 확인", (event) => busy(event.currentTarget, async () => {
     sheet.error("");
+    if (!consent.checked) throw new Error("공유 기능에 필요한 정보 처리에 동의해 주세요.");
     const code = normalizeCode(input.value);
+    consent.disabled = true;
     check.textContent = "확인 중…";
     try {
       const result = await services.sharing.get(code);
@@ -77,8 +93,11 @@ export function openReceive(services) {
       }
       sheet.footer.replaceChildren(el("div", { className: "share-actions" }, save, open));
       save.focus();
-    } finally { check.textContent = "작업공간 확인"; }
+    } finally { check.textContent = "작업공간 확인"; consent.disabled = false; }
   }, sheet.error), "btn primary full");
-  input.addEventListener("keydown", (event) => { if (event.key === "Enter") { event.preventDefault(); check.click(); } });
-  sheet.body.append(field("공유 코드", input)); sheet.footer.append(check); input.focus();
+  input.addEventListener("keydown", (event) => { if (event.key === "Enter" && !event.isComposing && event.keyCode !== 229) { event.preventDefault(); check.click(); } });
+  sheet.body.append(field("공유 코드", input));
+  const consent = sharingConsent(sheet, () => { check.disabled = !consent.checked; });
+  check.disabled = true;
+  sheet.footer.append(check); input.focus();
 }

@@ -1,50 +1,42 @@
 # ME:WE 웨일스토어 제출 준비
 
-현재 버전은 0.3.0입니다. 이 폴더는 등록 문구, 개인정보 안내, 심사 설명과 남은 작업을 모은 저장소 자료입니다. GitHub 저장소 게시와 별개로 개인정보 웹페이지 배포와 스토어 제출은 아직 진행하지 않았습니다.
+앱 버전 0.3.0 · 운영팀 ewhale · 개발자 정희진 · 문의 h33jin.jeong@gmail.com.
 
-## 먼저 볼 문서
+## 준비된 자료
 
-| 자료 | 용도 |
-| --- | --- |
-| [제출 체크리스트](release-checklist.md) | 제출을 막는 미완료 항목과 확인 결과 |
-| [스토어 설명](store-description.md) | 등록 화면에 넣을 이름·소개·문의 정보 |
-| [심사 설명](review-notes.md) | 권한 사유와 재현 가능한 기능 시험 방법 |
-| [개인정보 처리방침](../PRIVACY.md) | 실제 구현 기준 초안 |
-| [개인정보 웹페이지](privacy/index.html) | 로그인 없이 공개할 정적 HTML 초안 |
-| [운영 절차](operations.md) | 데이터 삭제 요청·만료 문서·장애 대응 |
-| [스크린샷 준비](screenshots.md) | 4장 구성과 촬영 시 가릴 정보 |
+- [전달 폴더](../delivery/): 팀원·스토어 공용 앱 ZIP, 128px 아이콘, 1280×800 스크린샷 2장, 설치·제출 안내
+- [개인정보 처리방침](../PRIVACY.md): 시행일 2026-10-12, Firestore 서울 및 Authentication 미국 처리 안내
+- [운영 절차](operations.md): 공유 문서 최대 14일 보관·매주 정리, 문의 완료 후 30일 내 삭제
+- [스토어 설명](store-description.md), [심사 설명](review-notes.md), [제출 체크리스트](release-checklist.md)
+- 개인정보 공개 주소: https://heejin0316.github.io/mewe-naver-whale/privacy/
 
-## 지금 필요한 결정
+## 반영한 확인 결과
 
-운영팀 **ewhale**, 개발자 **정희진**, 문의 **h33jin.jeong@gmail.com**으로 확정했습니다. 코드는 [MIT](../LICENSE), 로고는 [별도 정책](brand-policy.md)을 적용합니다.
+사용자가 Firestore 서울 설정, 두 사용자 간 공유 정상 작동, 최근 팝업 오류 해결을 확인했습니다. 공유하기와 공유받기에는 기본 미선택 동의 체크박스가 있으며, 동의 전에는 인증·조회·생성 요청을 보내지 않습니다. 동의하지 않아도 개인 작업공간은 사용할 수 있습니다.
 
-1. [delivery 폴더](../delivery/)의 앱 ZIP, 아이콘, 스토어 규격 스크린샷 2장, 팀원·제출 안내를 사용합니다. 정책과 UI 보완 후 패키지·이미지는 다시 생성합니다.
-2. Firebase 콘솔에서 실제 Firestore 위치를 확인합니다. Authentication의 미국 처리와 함께 개인정보 안내를 마무리합니다.
-3. 공유 문서·익명 계정·문의 메일의 최대 보관 기간과 삭제 주기를 정합니다. 자동 삭제가 없으므로 실행 가능한 운영 절차가 필요합니다.
-4. 개인정보 요청 시 본인 확인 방법과 삭제·중단 처리 절차를 확정합니다. 앱 내 철회 기능은 추가 개선안이며 받는 사람이 저장한 복사본은 회수할 수 없습니다.
-5. 최종 ZIP으로 다른 사용자의 웨일에서 운영 Firebase 공유·받기를 확인하고 화면을 촬영합니다. 팀원에게 받은 정상 동작 피드백과 최종 후보 시험 기록을 구분합니다.
+운영자가 최대 보관 기간과 수동 삭제 업무를 수락했습니다. 서버 자동 삭제나 예약 작업이 설치된 것은 아닙니다. 요청자 확인·삭제 절차와 정기 정리의 첫 실행은 운영자가 콘솔에서 점검해야 합니다.
 
-## 앱과 문서의 연결
+## 제출 순서
 
-앱 상단의 **앱 정보**에 문의 이메일, 권한 이유, 개인정보 처리방침 초안이 있습니다. 공유 팝업에는 전송 항목·코드 공개 범위·만료와 삭제의 차이를 안내합니다.
+1. delivery의 최신 앱 ZIP을 설치해 확인합니다. 이전 ZIP과 혼용하지 않습니다.
+2. 개인정보 공개 주소의 로그아웃 접근과 자료 내용을 확인합니다.
+3. 체크리스트의 최종 설치·업데이트·운영 점검 항목을 확인합니다.
+4. 스토어에 앱 ZIP, 아이콘, 스크린샷, 설명, 개인정보 URL을 입력합니다.
+5. 공개 범위와 미리보기를 확인한 뒤 담당자가 심사를 요청합니다.
 
-개인정보 원문은 `shared/privacy-content.js` 한 곳에서 관리합니다. 수정 후 아래 명령으로 Markdown과 웹페이지를 함께 생성합니다.
+GitHub 업로드·개인정보 페이지 공개와 웨일스토어 심사·출시는 별도 단계입니다.
+
+## 재생성
+
+개인정보 원문은 shared/privacy-content.js 한 곳에서 관리합니다.
 
 ```powershell
 node scripts/build-privacy.mjs
+node scripts/capture-readme.cjs
+node scripts/capture-store.cjs
+powershell -NoProfile -File scripts/package-delivery.ps1
 ```
 
-## 공개와 제출 순서
+정책이나 UI를 바꾸면 문서·이미지·ZIP을 함께 갱신합니다. 포장 도구는 압축 해제된 모든 런타임 파일을 원본과 해시 비교합니다. 코드 MIT와 [별도 브랜드 정책](brand-policy.md)은 그대로 적용됩니다.
 
-1. 체크리스트의 공개 전 필수 항목을 마칩니다.
-2. 개인정보 문서의 초안 표시를 해제하고 시행일을 확정합니다. HTML의 `noindex`도 공개 방침에 맞게 조정합니다.
-3. 웹페이지 공개 승인 후 GitHub Pages의 배포 원본을 해당 브랜치의 `/docs`로 설정합니다. 실제 배포 설정과 공개 가능 여부는 계정에서 확인합니다.
-4. 공개된 `/privacy/` 페이지가 로그아웃 상태에서 열리는지 확인합니다. 예정 URL은 `https://heejin0316.github.io/mewe-naver-whale/privacy/`이며 아직 게시된 주소로 취급하면 안 됩니다.
-5. 같은 정책을 앱·스토어 설명에 연결하고, 최종 패키지와 스크린샷을 준비합니다.
-6. 웨일스토어 개발자 등록 후 리뷰를 요청합니다.
-
-포장 구성만 확인하려면 `powershell -NoProfile -File scripts/package-preview.ps1`을 실행합니다. 새 `release/preview-*` 폴더에 ZIP과 아이콘을 만들며, 원본이나 기존 결과를 삭제하지 않습니다. 이 ZIP은 **미완료 사항이 포함된 포장 확인본**입니다.
-
-전체 문서는 [문서 안내](README.md), 버전·ZIP 검증은 [배포 절차](releasing.md)를 참고하세요.
-
-공식 기준: [심사 가이드](https://whale.dev/review_guides/), [등록 안내](https://developers.whale.naver.com/distribution/). 확인일: 2026-10-12.
+공식 기준: [심사 가이드](https://developers.whale.naver.com/review_guides/), [등록 안내](https://developers.whale.naver.com/distribution/).

@@ -136,6 +136,8 @@ input[type=checkbox]:disabled{opacity:.5;cursor:default}
 .share-code{font-variant-numeric:tabular-nums;letter-spacing:1px}
 .sharing .field{margin:18px 0 8px}
 .share-actions{display:flex;gap:8px}.share-actions .btn{flex:1;min-width:0}.sheet-footer .share-actions .btn+.btn{margin:0}
+.share-consent{align-items:flex-start;margin-top:14px;line-height:1.7;background:#f7faf9}
+.share-consent input{margin-top:2px}
 .sheet>.toast{bottom:82px}
 .app-info-button{font-size:11px;min-height:32px;padding:6px 8px;border-radius:8px;color:#727880}
 .app-info-button:hover{background:#f5f7f8}

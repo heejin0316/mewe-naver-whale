@@ -224,7 +224,7 @@ const server = http.createServer((req, res) => {
     await page.screenshot({ path: path.join(root, "test-results/app-info-320.png") });
     await page.getByRole("button", { name: "확인", exact: true }).click();
     await page.goto(`http://127.0.0.1:${server.address().port}/docs/privacy/index.html`);
-    await page.getByRole("heading", { name: "ME:WE 개인정보 처리방침 초안", exact: true }).waitFor();
+    await page.getByRole("heading", { name: "ME:WE 개인정보 처리방침", exact: true }).waitFor();
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
     await page.screenshot({ path: path.join(root, "test-results/privacy-page-320.png") });
     assert.deepEqual(errors, []);
