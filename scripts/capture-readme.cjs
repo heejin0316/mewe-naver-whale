@@ -29,6 +29,7 @@ const server = http.createServer((req, res) => {
       ];
       globalThis.whale = {
         runtime: { id: "readme-preview", getManifest: () => ({ version: "0.3.0" }), sendMessage: (message, done) => {
+          if (message.type === "SHARE_CONSENT_STATUS") return done({ requestId: message.requestId, ok: true, data: { accepted: false } });
           if (message.type !== "WORKSPACES_LIST") throw new Error("화면 촬영 중 변경 요청 금지");
           done({ requestId: message.requestId, ok: true, data: structuredClone(workspaces) });
         } }, sidebarAction: {}, storage: { onChanged: { addListener() {}, removeListener() {} } }
@@ -41,6 +42,7 @@ const server = http.createServer((req, res) => {
     await page.screenshot({ path: path.join(root, "docs/images/workspaces.png") });
     await page.getByRole("button", { name: "작업공간 공유", exact: true }).first().click();
     await page.getByRole("dialog").waitFor();
+    await page.locator(".share-consent input").first().waitFor();
     await page.screenshot({ path: path.join(root, "docs/images/sharing.png") });
     await page.getByRole("button", { name: "닫기", exact: true }).click();
     await page.getByRole("button", { name: "앱 정보", exact: true }).click();

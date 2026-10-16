@@ -2,6 +2,15 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { prepareShare, sharedWorkspace, newShareCode, normalizeCode, importedWorkspace } from "../features/sharing/model.js";
 import { createShareClient, encodeValue, decodeValue } from "../features/sharing/firebase.js";
+import { CONSENT_VERSION, hasSharingConsent, consentRecord } from "../features/sharing/consent.js";
+
+test("동의 버전·개별 항목·시각이 유효할 때만 공유 동의를 재사용", () => {
+  const payload = { version: CONSENT_VERSION, processing: true, overseas: true };
+  const record = consentRecord(payload, new Date("2026-10-16T00:00:00Z"));
+  assert.equal(hasSharingConsent(record), true);
+  for (const value of [null, true, {}, { ...record, version: "old" }, { ...record, processing: false }, { ...record, overseas: false }, { ...record, acceptedAt: "invalid" }]) assert.equal(hasSharingConsent(value), false);
+  for (const value of [{}, { ...payload, version: "old" }, { ...payload, processing: false }, { ...payload, overseas: false }]) assert.throws(() => consentRecord(value));
+});
 const page = (id, url, group = null) => ({ id, title: id, url, openMode: group ? "dual" : "tab", dualGroupId: group });
 const sample = () => ({ name: "공유 테스트", pages: [page("a", "https://example.com/a", "A"), page("pdf", "file:///C:/private.pdf", "A"), page("b", "https://example.com/b", "B"), page("c", "https://example.com/c", "B")] });
 test("공유 전에 파일을 제외하고 불완전한 듀얼탭만 해제, 원본 보존", () => {

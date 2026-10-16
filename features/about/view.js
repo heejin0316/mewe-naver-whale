@@ -1,5 +1,6 @@
-import { el, button } from "../../shared/dom.js";
+import { el, button, busy } from "../../shared/dom.js";
 import { api } from "../../shared/browser.js";
+import { request } from "../../shared/messages.js";
 import { privacy, privacyUrl, supportEmail } from "../../shared/privacy-content.js";
 
 export function privacyDetails() {
@@ -28,5 +29,19 @@ export function openAbout(modal) {
       "클립보드 쓰기: 공유 코드 복사",
       "Firebase API 접근: 익명 인증과 공유 코드 저장·조회"
     ].map(text => el("li", {}, text))), privacyDetails());
+  const sharingState = el("p", { className: "muted", role: "status" }, "공유 이용 설정을 확인하고 있어요.");
+  const stopSharing = button("이 기기에서 공유 사용 중지", event => busy(event.currentTarget, async () => {
+    await request("SHARE_CONSENT_CLEAR");
+    sharingState.textContent = "공유 사용을 중지했어요. 다시 이용할 때 동의를 받아요.";
+    stopSharing.hidden = true;
+  }, sheet.error), "btn full");
+  stopSharing.hidden = true;
+  sheet.body.append(el("h3", {}, "공유 이용 설정"), sharingState, stopSharing,
+    el("p", { className: "muted" }, "사용을 중지해도 이미 생성한 공유 자료와 서버 인증 계정은 삭제되지 않아요. 서버 자료 삭제·동의 철회는 위 문의 이메일로 요청해 주세요."));
+  request("SHARE_CONSENT_STATUS").then(status => {
+    if (!sharingState.isConnected) return;
+    sharingState.textContent = status.accepted ? "이 기기에서는 추가 동의 없이 공유 기능을 이용할 수 있어요." : "공유 기능을 처음 이용할 때 동의를 받아요.";
+    stopSharing.hidden = !status.accepted;
+  }).catch(error => { if (sharingState.isConnected) { sharingState.textContent = "공유 설정을 불러오지 못했어요."; sheet.error(error.message); } });
   sheet.footer.append(button("확인", () => sheet.close(), "btn primary full"));
 }

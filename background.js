@@ -5,6 +5,7 @@ import { launchWorkspace } from "./features/study-widget/launcher.js";
 import { closeTrackedTabs } from "./features/study-widget/closer.js";
 import { createShareClient } from "./features/sharing/firebase.js";
 import { importedWorkspace, sharedWorkspace } from "./features/sharing/model.js";
+import { CONSENT_KEY, hasSharingConsent, consentRecord } from "./features/sharing/consent.js";
 
 const queue = serialQueue();
 const sessionQueue = serialQueue();
@@ -12,6 +13,7 @@ const launchKey = "mewe.openWorkspaces";
 const shares = createShareClient({ loadAuth: () => read("mewe.firebaseAuth", null), saveAuth: (auth) => write("mewe.firebaseAuth", auth) });
 const previewKey = "mewe.sharePreviews";
 const previewQueue = serialQueue();
+const consentQueue = serialQueue();
 async function getPreview(id) {
   const previews = (await call(api.storage.session, "get", previewKey))[previewKey] || {};
   const value = previews[id];
@@ -56,10 +58,24 @@ async function initialize() {
 api.runtime.onInstalled.addListener(() => { queue(initialize).catch(console.error); });
 api.runtime.onMessage.addListener((message, sender, respond) => {
   if (sender.id !== api.runtime.id || !sender.url?.startsWith(api.runtime.getURL("")) || !message?.requestId) return false;
-  const allowed = ["WORKSPACES_LIST", "WORKSPACE_SAVE", "WORKSPACE_DELETE", "WORKSPACE_MOVE", "WORKSPACE_LAUNCH", "WORKSPACE_CLOSE", "SHARE_CREATE", "SHARE_GET", "SHARE_SAVE", "SHARE_LAUNCH"];
+  const allowed = ["WORKSPACES_LIST", "WORKSPACE_SAVE", "WORKSPACE_DELETE", "WORKSPACE_MOVE", "WORKSPACE_LAUNCH", "WORKSPACE_CLOSE", "SHARE_CREATE", "SHARE_GET", "SHARE_SAVE", "SHARE_LAUNCH", "SHARE_CONSENT_STATUS", "SHARE_CONSENT_ACCEPT", "SHARE_CONSENT_CLEAR"];
   if (!allowed.includes(message.type)) return false;
   const execute = async () => {
     requireWhale();
+    if (message.type === "SHARE_CONSENT_STATUS") return { accepted: hasSharingConsent(await read(CONSENT_KEY, null)) };
+    if (message.type === "SHARE_CONSENT_ACCEPT") {
+      const record = consentRecord(message.payload);
+      if (!hasSharingConsent(await read(CONSENT_KEY, null))) await write(CONSENT_KEY, record);
+      return { accepted: true };
+    }
+    if (message.type === "SHARE_CONSENT_CLEAR") {
+      await write(CONSENT_KEY, null);
+      await call(api.storage.session, "set", { [previewKey]: {} });
+      return { accepted: false };
+    }
+    if (["SHARE_CREATE", "SHARE_GET"].includes(message.type) && !hasSharingConsent(await read(CONSENT_KEY, null))) {
+      throw new Error("공유 동의가 필요해요. 공유 화면을 다시 열어 동의해 주세요.");
+    }
     if (message.type === "SHARE_CREATE") return shares.create(message.payload.workspace);
     if (message.type === "SHARE_GET") {
       const result = await shares.get(message.payload.code);
@@ -126,6 +142,8 @@ api.runtime.onMessage.addListener((message, sender, respond) => {
       return next;
     });
   };
-  execute().then((data) => respond({ requestId: message.requestId, ok: true, data }), (error) => respond({ requestId: message.requestId, ok: false, error: { code: "REQUEST_FAILED", message: error.message } }));
+  // Serialize consent changes with network operations, including requests from another sidebar.
+  const result = ["SHARE_CREATE", "SHARE_GET", "SHARE_CONSENT_STATUS", "SHARE_CONSENT_ACCEPT", "SHARE_CONSENT_CLEAR"].includes(message.type) ? consentQueue(execute) : execute();
+  result.then((data) => respond({ requestId: message.requestId, ok: true, data }), (error) => respond({ requestId: message.requestId, ok: false, error: { code: "REQUEST_FAILED", message: error.message } }));
   return true;
 });

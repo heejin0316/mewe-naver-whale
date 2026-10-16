@@ -33,6 +33,7 @@ const root = path.resolve(__dirname, '..');
     await page.screenshot({path:path.join(output,'01-workspaces.png')});
     await frame.getByRole('button',{name:'작업공간 공유',exact:true}).first().click();
     await frame.getByRole('dialog').waitFor();
+    await frame.locator('.share-consent input').first().waitFor();
     await page.locator('h1').evaluate(n=>{n.replaceChildren('함께 볼 페이지를',document.createElement('br'),'코드 하나로 공유해요.');});
     await page.locator('.copy p').evaluate(n=>{n.replaceChildren('공유할 페이지 목록을 확인하고,',document.createElement('br'),'팀원에게 작업공간을 전달하세요.');});
     await page.screenshot({path:path.join(output,'02-sharing.png')});

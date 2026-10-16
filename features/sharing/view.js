@@ -1,7 +1,9 @@
 import { el, button, field, busy } from "../../shared/dom.js";
 import { prepareShare, normalizeCode, displayCode, SHARE_DAYS } from "./model.js";
-import { supportEmail } from "../../shared/privacy-content.js";
+import { supportEmail, privacyUrl } from "../../shared/privacy-content.js";
 import { privacyDetails } from "../about/view.js";
+import { request } from "../../shared/messages.js";
+import { CONSENT_VERSION } from "./consent.js";
 
 function pageList(pages) {
   return el("ul", { className: "share-pages" }, ...pages.map((p) => el("li", {}, el("strong", {}, p.title), el("small", {}, p.url))));
@@ -9,14 +11,38 @@ function pageList(pages) {
 const accessNote = () => el("p", { className: "muted share-note" }, "로그인이 필요한 페이지는 받는 사람의 계정과 접근 권한이 필요해요.");
 
 function sharingConsent(sheet, onChange) {
-  const input = el("input", { type: "checkbox" });
-  input.addEventListener("change", onChange);
-  sheet.body.append(
-    el("p", { className: "muted share-note" }, "공유 인증을 위해 임시 사용자 식별 정보와 접속 정보가 미국에서 처리돼요. 동의하지 않아도 개인 작업공간은 사용할 수 있어요."),
-    privacyDetails(),
-    el("label", { className: "check-line share-consent" }, input, el("span", {}, "개인정보 처리방침을 확인했으며, 공유 기능의 개인정보 처리 및 국외 처리에 동의해요."))
-  );
-  return input;
+  let accepted = false, loaded = false;
+  const inputs = [el("input", { type: "checkbox" }), el("input", { type: "checkbox" })];
+  for (const input of inputs) input.addEventListener("change", onChange);
+  const area = el("section", { className: "sharing-consent-area" }, el("p", { className: "muted share-note" }, "공유 이용 설정을 확인하고 있어요."));
+  sheet.body.append(area);
+  function render() {
+    area.replaceChildren(...(accepted ? [el("p", { className: "muted share-note" }, el("a", { href: privacyUrl, target: "_blank", rel: "noopener noreferrer" }, "개인정보 처리방침"))] : [
+      el("p", { className: "muted share-note" }, "처음 한 번만 동의해 주세요. 공유 인증 정보는 미국에서 처리돼요. 동의하지 않아도 개인 작업공간은 사용할 수 있어요."),
+      privacyDetails(),
+      el("label", { className: "check-line share-consent" }, inputs[0], el("span", {}, "공유 기능의 개인정보 수집·이용에 동의해요.")),
+      el("label", { className: "check-line share-consent" }, inputs[1], el("span", {}, "공유 인증 정보의 국외 이전에 동의해요."))
+    ]));
+  }
+  request("SHARE_CONSENT_STATUS").then(status => {
+    if (!area.isConnected) return;
+    accepted = status.accepted === true; loaded = true; render(); onChange();
+  }).catch(error => {
+    if (!area.isConnected) return;
+    area.replaceChildren(el("p", { className: "notice" }, "공유 설정을 불러오지 못했어요. 화면을 닫았다가 다시 열어 주세요."));
+    sheet.error(error.message);
+  });
+  return {
+    get checked() { return loaded && (accepted || inputs.every(input => input.checked)); },
+    set disabled(value) { for (const input of inputs) input.disabled = value; },
+    async remember() {
+      if (!this.checked) throw new Error("공유 기능에 필요한 정보 처리에 동의해 주세요.");
+      if (!accepted) {
+        await request("SHARE_CONSENT_ACCEPT", { version: CONSENT_VERSION, processing: inputs[0].checked, overseas: inputs[1].checked });
+        accepted = true; render();
+      }
+    }
+  };
 }
 
 export function openShare(services, value) {
@@ -44,6 +70,8 @@ export function openShare(services, value) {
     consent.disabled = true;
     sheet.error(""); copy.textContent = "공유 코드 준비 중…";
     try {
+      await consent.remember();
+      if (!sheet.body.isConnected) return;
       if (!issued || Date.parse(issued.expiresAt) <= Date.now()) issued = await services.sharing.create(value);
       if (!sheet.body.isConnected) return;
       codeInput.value = displayCode(issued.code); result.hidden = false;
@@ -73,6 +101,8 @@ export function openReceive(services) {
     consent.disabled = true;
     check.textContent = "확인 중…";
     try {
+      await consent.remember();
+      if (!sheet.body.isConnected) return;
       const result = await services.sharing.get(code);
       if (!sheet.body.isConnected) return;
       input.value = "";

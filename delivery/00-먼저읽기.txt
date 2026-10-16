@@ -25,3 +25,5 @@ GitHub의 Code → Download ZIP도 제출용 앱 ZIP과 다릅니다.
 최신 소스 및 상세 점검:
 https://github.com/heejin0316/mewe-naver-whale
 https://github.com/heejin0316/mewe-naver-whale/blob/main/docs/release-checklist.md
+
+2026-10-16: 공유 동의는 이 브라우저에서 최초 한 번만 받습니다. 공유하기·공유받기에 공통 적용하며, 앱 정보에서 공유 사용을 중지하거나 동의 범위가 바뀌면 다시 동의받습니다.
