@@ -2,6 +2,8 @@
 
 앱 버전 0.3.0 · 운영팀 ewhale · 개발자 정희진 · 문의 h33jin.jeong@gmail.com.
 
+**2026-10-16: 코드·설치 패키지 검증 완료, 스토어 미제출.** [최종 검토 결과](final-review.md)에서 시험 범위와 남은 운영 확인을 먼저 보세요.
+
 ## 준비된 자료
 
 - [전달 폴더](../delivery/): 팀원·스토어 공용 앱 ZIP, 128px 아이콘, 1280×800 스크린샷 2장, 설치·제출 안내
@@ -10,7 +12,7 @@
 - [스토어 설명](store-description.md), [심사 설명](review-notes.md), [제출 체크리스트](release-checklist.md)
 - 개인정보 공개 주소: https://heejin0316.github.io/mewe-naver-whale/privacy/
 
-2026-10-12 GitHub Pages main/docs 배포 성공 및 비인증 HTTP 200·최신 정책 내용을 확인했습니다.
+GitHub Pages main/docs로 공개하며, 2026-10-16 비인증 HTTP 200과 공개 정책 내용을 확인했습니다.
 
 ## 반영한 확인 결과
 

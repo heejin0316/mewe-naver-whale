@@ -21,11 +21,11 @@ export function decodeValue(value) {
 function userError(error, operation) {
   const code = error.code || "";
   if (/RESOURCE_EXHAUSTED|TOO_MANY_ATTEMPTS|QUOTA_EXCEEDED/.test(code) || error.status === 429) return new Error("공유 서비스의 사용 한도에 도달했어요. 나중에 다시 시도해 주세요. 개인 작업공간은 계속 사용할 수 있어요.");
-  if (/OPERATION_NOT_ALLOWED|ADMIN_ONLY_OPERATION/.test(code)) return new Error("Firebase의 익명 인증이 꺼져 있어요. 관리자에게 문의해 주세요.");
-  if (/PERMISSION_DENIED/.test(code)) return new Error(operation === "get" ? "공유 코드를 찾을 수 없거나 만료되었어요. 계속 실패하면 공유 서비스 설정을 확인해 주세요." : "공유 저장이 허용되지 않았어요. Firebase 보안 규칙을 적용했는지 확인해 주세요.");
+  if (/OPERATION_NOT_ALLOWED|ADMIN_ONLY_OPERATION/.test(code)) return new Error("공유 서비스를 이용할 수 없어요. 잠시 후 다시 시도하거나 앱 정보의 문의 주소로 알려 주세요.");
+  if (/PERMISSION_DENIED/.test(code)) return new Error(operation === "get" ? "공유 코드를 찾을 수 없거나 만료되었어요. 보낸 사람에게 새 코드를 요청해 주세요." : "공유 코드를 저장하지 못했어요. 잠시 후 다시 시도하거나 앱 정보의 문의 주소로 알려 주세요.");
   if (error.status === 404) return new Error("공유 코드를 찾을 수 없어요. 코드를 다시 확인해 주세요.");
   if (error.status === 401) return new Error("공유 인증에 실패했어요. 잠시 후 다시 시도해 주세요.");
-  if (error.status) return new Error("공유 서비스에 연결하지 못했어요. Firebase 설정을 확인하거나 잠시 후 다시 시도해 주세요.");
+  if (error.status) return new Error("공유 서비스에 연결하지 못했어요. 잠시 후 다시 시도해 주세요.");
   return error;
 }
 

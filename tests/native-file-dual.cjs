@@ -1,7 +1,7 @@
 // Actual extension messages and local storage in an isolated Whale profile.
 const fs = require("node:fs"), os = require("node:os"), path = require("node:path"), assert = require("node:assert/strict");
 const { chromium } = require(process.env.MEWE_NODE_MODULES ? path.join(process.env.MEWE_NODE_MODULES, "playwright") : "playwright");
-const root = path.resolve(__dirname, "..");
+const root = process.env.MEWE_EXTENSION_ROOT || path.resolve(__dirname, "..");
 (async () => {
   const profile = fs.mkdtempSync(path.join(os.tmpdir(), "mewe-files-test-"));
   const appDir = "C:/Program Files/Naver/Naver Whale/Application";

@@ -1,5 +1,9 @@
 $ErrorActionPreference = 'Stop'
 $sourceRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
+& node (Join-Path $sourceRoot 'tests/all.test.js')
+if ($LASTEXITCODE -ne 0) { throw 'Unit tests failed; delivery was not updated' }
+& node (Join-Path $sourceRoot 'scripts/check-repo.mjs')
+if ($LASTEXITCODE -ne 0) { throw 'Repository checks failed; delivery was not updated' }
 $manifest = Get-Content (Join-Path $sourceRoot 'manifest.json') -Raw -Encoding UTF8 | ConvertFrom-Json
 $outputRoot = Join-Path $sourceRoot 'delivery'
 [IO.Directory]::CreateDirectory($outputRoot) | Out-Null
@@ -31,6 +35,7 @@ $hashes = Get-ChildItem $outputRoot -Recurse -File | Where-Object { $_.Name -ne 
   "$((Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash)  $relative"
 }
 [IO.File]::WriteAllText((Join-Path $outputRoot 'SHA256SUMS.txt'), (($hashes -join "`n") + "`n"), [Text.UTF8Encoding]::new($false))
+& (Join-Path $PSScriptRoot 'check-delivery.ps1')
 $bundlePath = Join-Path $previewRoot "MEWE-$($manifest.version)-team-kit.zip"
 Compress-Archive -LiteralPath $outputRoot -DestinationPath $bundlePath
 Write-Output "App ZIP: $appZip"

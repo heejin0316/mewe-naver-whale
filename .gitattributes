@@ -1,2 +1,4 @@
+# Keep runtime sources identical in local, ZIP and CI checkouts.
+* text=auto eol=lf
 # Preserve published package checksums across checkout platforms.
 delivery/** -text

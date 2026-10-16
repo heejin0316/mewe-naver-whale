@@ -24,7 +24,10 @@ const server = http.createServer((req, res) => {
       const tab = (id, title, query, index) => ({ id, title, url: `https://search.naver.com/search.naver?query=${query}`, windowId: 1, index });
       const left = tab(1, "이화여대 : 네이버 검색", "ewha", 0), right = tab(2, "연세대 : 네이버 검색", "yonsei", 0), single = tab(3, "충남대 : 네이버 검색", "chungnam", 1);
       globalThis.whale = {
-        runtime: { id: "test" }, sidebarAction: {}, windows: { getCurrent: (_options, done) => done({ id: 1, tabs: [left, single] }) },
+        runtime: { id: "test", sendMessage: (message, done) => {
+          if (message.type !== "SHARE_CONSENT_STATUS") throw new Error("Unexpected fixture request: " + message.type);
+          done({ requestId: message.requestId, ok: true, data: { accepted: false } });
+        } }, sidebarAction: {}, windows: { getCurrent: (_options, done) => done({ id: 1, tabs: [left, single] }) },
         tabs: { query: (_options, done) => done([left, single]), get: (id, done) => done(id === 2 ? right : null) },
         debugger: { getTargets: done => done([{type:"page", tabId:1}, {type:"page", tabId:2}, {type:"page", tabId:3}]) }
       };
@@ -39,7 +42,11 @@ const server = http.createServer((req, res) => {
         workspaceStore: {
         list: async () => structuredClone(window.saved), subscribe: fn => { listener = fn; return () => {}; },
         save: async value => { window.saved = mutateWorkspaces(window.saved, "WORKSPACE_SAVE", value); await listener(); },
-        remove: async () => {}
+        remove: async id => {
+          if (window.failDelete) throw new Error("삭제 저장 실패 시험");
+          window.saved = mutateWorkspaces(window.saved, "WORKSPACE_DELETE", { id });
+          await listener();
+        }
       } };
       mount(document.querySelector("#view"), services);
     });
@@ -211,6 +218,26 @@ const server = http.createServer((req, res) => {
       assert.equal(await page.locator(".page-choice .dual-badge").count(), 0);
       await page.getByRole("button", { name: "닫기", exact: true }).click();
     }
+    const beforeDelete = await page.evaluate(() => structuredClone(window.saved));
+    async function askDelete() {
+      await page.getByRole("button", { name: "연세대만 저장 메뉴", exact: true }).click();
+      await page.getByRole("button", { name: "삭제", exact: true }).click();
+      return page.getByRole("dialog", { name: "작업공간을 삭제할까요?", exact: true });
+    }
+    const deleteDialog = await askDelete();
+    await page.screenshot({ path: path.join(root, "test-results/workspace-delete-320.png") });
+    assert.equal(await deleteDialog.getByRole("button", { name: "취소", exact: true }).evaluate(node => node === document.activeElement), true);
+    await deleteDialog.getByRole("button", { name: "취소", exact: true }).click();
+    assert.deepEqual(await page.evaluate(() => window.saved), beforeDelete, "cancel never changes saved data");
+    await askDelete();
+    await page.evaluate(() => { window.failDelete = true; });
+    await deleteDialog.getByRole("button", { name: "삭제", exact: true }).click();
+    await deleteDialog.getByRole("alert").getByText("삭제 저장 실패 시험", { exact: true }).waitFor();
+    assert.deepEqual(await page.evaluate(() => window.saved), beforeDelete, "failed delete retains data and dialog");
+    await page.evaluate(() => { window.failDelete = false; });
+    await deleteDialog.getByRole("button", { name: "삭제", exact: true }).click();
+    await deleteDialog.waitFor({ state: "detached" });
+    assert.deepEqual(await page.evaluate(() => window.saved), beforeDelete.filter(w => w.name !== "연세대만 저장"), "only confirmed workspace is removed");
     await page.evaluate(async () => {
       const { openAbout } = await import("/features/about/view.js");
       const { modal } = await import("/shared/modal.js");

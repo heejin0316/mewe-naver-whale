@@ -2,7 +2,7 @@
 // Production project, user tabs and installed extension are never touched by this test.
 const fs=require('node:fs'),os=require('node:os'),path=require('node:path'),http=require('node:http'),assert=require('node:assert/strict');
 const {chromium}=require(process.env.MEWE_NODE_MODULES?path.join(process.env.MEWE_NODE_MODULES,'playwright'):'playwright');
-const root=path.resolve(__dirname,'..'),temp=fs.mkdtempSync(path.join(os.tmpdir(),'mewe-sharing-')),copy=path.join(temp,'extension');
+const root=process.env.MEWE_EXTENSION_ROOT || path.resolve(__dirname,'..'),temp=fs.mkdtempSync(path.join(os.tmpdir(),'mewe-sharing-')),copy=path.join(temp,'extension');
 const projectId='demo-mewe';
 function token(uid){const n=Math.floor(Date.now()/1000);return [Buffer.from(JSON.stringify({alg:'none',typ:'JWT'})).toString('base64url'),Buffer.from(JSON.stringify({aud:projectId,iss:`https://securetoken.google.com/${projectId}`,sub:uid,user_id:uid,iat:n,exp:n+3600,auth_time:n,firebase:{identities:{},sign_in_provider:'anonymous'}})).toString('base64url'),''].join('.');}
 (async()=>{

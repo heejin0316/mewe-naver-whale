@@ -60,7 +60,7 @@ test("만료 토큰 갱신, 응답의 계정 유지", async () => {
   assert.equal(f.calls[1].headers.Authorization, "Bearer token2");
 });
 test("무료 한도·규칙 미적용·네트워크 실패를 사용자 메시지로 전달", async () => {
-  for (const [failure, pattern] of [[{ status: 429, body: { error: { status: "RESOURCE_EXHAUSTED" } } }, /사용 한도/], [{ status: 403, body: { error: { status: "PERMISSION_DENIED" } } }, /보안 규칙/], [new Error("offline"), /인터넷 연결/]]) {
+  for (const [failure, pattern] of [[{ status: 429, body: { error: { status: "RESOURCE_EXHAUSTED" } } }, /사용 한도/], [{ status: 403, body: { error: { status: "PERMISSION_DENIED" } } }, /공유 코드를 저장하지 못했어요/], [new Error("offline"), /인터넷 연결/]]) {
     const f = fixture([signIn, failure]); await assert.rejects(f.client.create(sample()), pattern);
   }
 });

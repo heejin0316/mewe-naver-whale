@@ -42,6 +42,7 @@ for (const file of files) {
     for (const match of source.matchAll(/(?:src|href)="([^"]+)"/g)) reference(file, match[1]);
   }
   if ((file.startsWith("shared") || file.startsWith("features") || ["app.js", "background.js"].includes(file)) && file.endsWith(".js")) {
+    execFileSync(process.execPath, ["--check", path.join(root, file)], { stdio: "pipe" });
     for (const match of source.matchAll(/(?:from\s*|import\s*)["'](\.[^"']+)["']/g)) reference(file, match[1]);
   }
 }
@@ -56,4 +57,4 @@ for (const iconSet of [manifest.icons, manifest.sidebar_action.default_icon]) fo
   assert.ok(width >= Number(size), `${file}: 표시 크기보다 작은 원본`);
 }
 execFileSync(process.execPath, [path.join(root, "scripts/build-privacy.mjs"), "--check"], { stdio: "inherit" });
-console.log(`저장소 점검 통과: 버전 ${manifest.version}, 아이콘 크기, 로컬 링크·참조, 라이선스 고지`);
+console.log(`저장소 점검 통과: 버전 ${manifest.version}, 실행 코드 문법, 아이콘 크기, 로컬 링크·참조, 라이선스 고지`);

@@ -12,6 +12,23 @@ export function mount(container, services) {
   const reorder = workspaceReorder(container, cards, { move: (id, beforeId) => services.workspaceStore.move(id, beforeId), refresh, toast: services.toast });
   const errorBox = el("p", { className: "error", role: "alert", hidden: true });
   const total = el("span", { className: "workspace-total" }, "0");
+  function confirmDelete(value) {
+    const sheet = services.modal.open("작업공간을 삭제할까요?");
+    if (!sheet) return;
+    sheet.body.append(
+      el("h3", {}, value.name),
+      el("p", {}, "삭제한 작업공간은 복구할 수 없어요."),
+      el("p", { className: "muted" }, "이미 열어둔 페이지와 전달한 공유본은 그대로 남아요.")
+    );
+    const cancel = button("취소", () => sheet.close(), "btn full");
+    const remove = button("삭제", event => busy(event.currentTarget, async () => {
+      await services.workspaceStore.remove(value.id);
+      sheet.close(true);
+      services.toast("작업공간을 삭제했어요.");
+    }, sheet.error), "btn danger full");
+    sheet.footer.append(el("div", { className: "actions" }, cancel, remove));
+    cancel.focus();
+  }
   const capture = button("지금 작업공간 저장", (event) => busy(event.currentTarget, async () => {
     const result = await services.browser.currentTabs();
     if (alive) openEditor(services, null, result.pages);
@@ -45,7 +62,7 @@ export function mount(container, services) {
         toggle.setAttribute("aria-label", `${w.name} 메뉴`);
         menu.append(
           button("수정", () => { menu.hidden = true; openEditor(services, w); }, "text-button"),
-          button("삭제", (event) => { menu.hidden = true; busy(event.currentTarget, () => services.workspaceStore.remove(w.id), services.toast); }, "text-button danger")
+          button("삭제", () => { menu.hidden = true; confirmDelete(w); }, "text-button danger")
         );
         card.append(
           el("div", { className: "workspace-card-header" }, folder, el("div", { className: "workspace-heading" }, el("h3", {}, w.name), el("p", { className: "muted" }, `${w.pages.length}개 페이지${dualCount ? ` · 듀얼탭 ${dualCount}개` : ""}`)), toggle, menu),

@@ -33,13 +33,15 @@
 
 스토어 공개 전에는 개발자 모드로 설치할 수 있습니다.
 
-**팀원 전달·스토어 업로드 자료:** [delivery 폴더](delivery/)에 [앱 ZIP](delivery/MEWE-0.3.0.zip), 128px 아이콘, 1280×800 스크린샷 2장과 설치·제출 안내를 모았습니다. **제출 후보**이며 심사 요청 전 [체크리스트](docs/release-checklist.md)의 운영 점검을 완료하세요. 팀원은 앱 ZIP을 받아 아래 2번부터 진행하면 됩니다.
+**[설치용 앱 ZIP 받기](https://github.com/heejin0316/mewe-naver-whale/raw/refs/heads/main/delivery/MEWE-0.3.0.zip)** · [아이콘·스크린샷·제출 안내](delivery/) · [최종 검증 결과](docs/final-review.md)
 
-1. 저장소 상단 **Code → Download ZIP**을 누르고 압축을 풉니다.
+1. 위의 **설치용 앱 ZIP**을 내려받아 압축을 풉니다.
 2. 네이버 웨일 주소창에 `whale://extensions`를 입력합니다.
 3. **개발자 모드 → 압축해제된 확장앱 설치**를 누릅니다.
 4. 압축을 푼 폴더 중 **`manifest.json`이 있는 폴더**를 선택합니다.
 5. 사이드바에서 **ME:WE**를 엽니다.
+
+팀원 설치와 스토어 업로드에는 동일한 앱 ZIP을 사용합니다. 저장소의 **Code → Download ZIP**은 개발 소스 전체이므로 스토어에 제출하지 않습니다. 현재 패키지는 검증을 마친 **제출 후보**이며, 심사 요청 전 [운영 점검](docs/release-checklist.md)을 확인하세요.
 
 별도 빌드나 npm 설치가 필요하지 않습니다. **일반 사용자는 Firebase를 설정할 필요가 없습니다.** 공유 기능은 앱에 연결된 운영 서비스를 사용합니다.
 

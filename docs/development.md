@@ -12,7 +12,7 @@ npm run check
 ```
 
 - `test`: 저장·데이터 검증·실행 실패·공유 모델·REST 오류 처리 단위 테스트
-- `check`: 버전 일치, 아이콘 크기, 문서의 로컬 링크와 런타임 참조, 개인정보 생성물 최신 여부
+- `check`: 버전 일치, 실행 JS 문법, 아이콘 크기, 문서의 로컬 링크와 런타임 참조, 개인정보 생성물 최신 여부
 
 `check`는 스토어 승인이나 운영 Firebase 설정을 검증하지 않습니다.
 
@@ -24,7 +24,7 @@ Playwright를 사용할 수 있는 Node 환경이 필요합니다. 저장소 밖
 node tests/ui-dual.cjs
 ```
 
-이 시험은 탭 API를 모의해 페이지 선택, 듀얼탭 A/B 표시, 수정·제거, 공유 안내, Enter 입력과 좁은 화면을 확인합니다. 실제 웨일 듀얼탭 API 시험과 구분합니다.
+이 시험은 탭 API를 모의해 페이지 선택, 듀얼탭 A/B 표시, 수정·제거, 공유 안내, Enter 입력과 좁은 화면을 확인합니다. 삭제 확인의 취소·실패·재시도도 확인합니다. 실제 웨일 듀얼탭 API 시험과 구분합니다.
 
 ## 실제 웨일 시험
 
@@ -38,6 +38,9 @@ node tests/ui-dual.cjs
 | `node tests/native-files.cjs` | PDF 수집, 한글·특수문자 경로, 파일 열기 |
 | `node tests/native-file-dual.cjs` | 파일/웹·파일/파일 듀얼탭 복원과 닫기 |
 | `node tests/native-sharing.cjs` | 아래 에뮬레이터로 두 프로필 간 공유·받기 |
+| `node tests/native-lifecycle.cjs` | 브라우저 재시작·같은 설치 경로 업데이트 후 작업공간·최초 동의 보존 |
+
+`MEWE_EXTENSION_ROOT`에 ZIP 압축 해제 폴더를 지정하면 실제 패키지로 시험합니다. 수명주기 시험은 `MEWE_BASELINE_EXTENSION_ROOT`를 이전 전달본으로 지정할 수 있으며, 이전본과 새 패키지를 임시 경로에 복사해 시험합니다. 기존 사용자의 설치 폴더·브라우저 데이터는 변경하지 않습니다.
 
 기존 검증 대상은 웨일 5.39.412.57입니다. 버전별 분할 화면 동작 차이가 있을 수 있으므로 배포 후보는 설치 환경에서 다시 확인합니다. 테스트 산출물과 임시 프로필은 배포하지 않습니다.
 
@@ -77,3 +80,5 @@ node scripts/capture-readme.cjs
 ## 제출 전
 
 [수동 시험 목록](../tests/integration-checklist.md)과 [출시 절차](releasing.md)를 따릅니다. README 화면, 코드, 버전, 정책과 실제 ZIP이 같은 상태를 설명하는지 확인합니다.
+
+`scripts/check-delivery.ps1`은 ZIP/소스 전체 대조, 아이콘 128×128, 스크린샷 1280×800, 전달 자료 SHA256을 검사합니다. GitHub Actions는 Node.js 22/Windows에서 기본 시험·저장소 점검·제출 파일 검사를 수행합니다. 네이티브 웨일 시험·운영 서버 확인까지 CI에서 수행하는 것은 아닙니다.

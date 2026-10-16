@@ -1,7 +1,7 @@
 // Isolated Whale profile: no access to the user's installed extension or tabs.
 const fs = require("node:fs"), os = require("node:os"), path = require("node:path"), http = require("node:http"), assert = require("node:assert/strict");
 const { chromium } = require(process.env.MEWE_NODE_MODULES ? path.join(process.env.MEWE_NODE_MODULES, "playwright") : "playwright");
-const root = path.resolve(__dirname, "..");
+const root = process.env.MEWE_EXTENSION_ROOT || path.resolve(__dirname, "..");
 const profile = fs.mkdtempSync(path.join(os.tmpdir(), "mewe-native-test-"));
 const server = http.createServer((req, res) => {
   const name = ({ "/ewha": "이화여대", "/yonsei": "연세대", "/chungnam": "충남대" })[req.url] || "테스트";
