@@ -1,0 +1,11 @@
+.save-destination{min-width:0;margin:24px 0 0;padding:22px 0 0;border:0;border-top:1px solid var(--color-border)}
+.save-destination legend{float:left;width:100%;margin:0 0 14px;font-size:15px;font-weight:700}
+.save-destination-choice{clear:both;display:flex;align-items:center;gap:10px;min-height:44px;margin:8px 0;padding:11px 12px;border:1px solid var(--color-border);border-radius:11px;font-size:13px;cursor:pointer}
+.save-destination-choice:has(input:checked){border-color:var(--color-primary-border,var(--color-primary));background:var(--color-primary-soft,#edf9f5)}
+.save-destination-choice:has(input:disabled){color:var(--color-muted);cursor:default;opacity:.65}
+.save-destination .save-destination-choice input[type=radio]{appearance:none;-webkit-appearance:none;display:grid;place-content:center;width:20px;height:20px;min-height:20px;flex:0 0 20px;margin:0;padding:0;border:1.5px solid #aebbc1;border-radius:50%;background:#fff;cursor:inherit;transition:border-color .15s,background-color .15s}
+.save-destination .save-destination-choice input[type=radio]:checked{border-color:#aebbc1;background:radial-gradient(circle at 50% 50%,var(--color-primary) 0 6.5px,#fff 6.75px);background-origin:border-box}
+.save-destination .save-destination-choice input[type=radio]:focus-visible{outline:3px solid #438bce;outline-offset:2px}
+.save-destination .field{clear:both;margin:16px 0 0}
+.save-destination-availability,.save-destination-count{clear:both;line-height:1.7;margin:10px 0 0}
+.save-destination-overflow{color:var(--color-error)}

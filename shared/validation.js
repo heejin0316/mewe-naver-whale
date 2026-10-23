@@ -24,8 +24,8 @@ export function pageTitle(value) {
 }
 
 export function workspace(input) {
-  if (!input || typeof input !== "object") throw new Error("작업공간 형식이 올바르지 않아요.");
-  if (typeof input.name !== "string" || !input.name.trim() || input.name.trim().length > 60) throw new Error("작업공간 이름은 1~60자로 입력해 주세요.");
+  if (!input || typeof input !== "object") throw new Error("탭 모음 형식이 올바르지 않아요.");
+  if (typeof input.name !== "string" || !input.name.trim() || input.name.trim().length > 60) throw new Error("탭 모음 이름은 1~60자로 입력해 주세요.");
   if (!Array.isArray(input.pages) || input.pages.length < 1 || input.pages.length > 10) throw new Error("페이지는 1~10개 선택해 주세요.");
   const ids = new Set();
   const pages = input.pages.map((p) => {

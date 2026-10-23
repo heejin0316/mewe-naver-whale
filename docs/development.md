@@ -21,8 +21,12 @@ npm run check
 Playwright를 사용할 수 있는 Node 환경이 필요합니다. 저장소 밖에 설치된 경우 `MEWE_NODE_MODULES`에 해당 `node_modules` 경로를 지정할 수 있습니다. UI 시험의 기본 브라우저는 Windows에 설치된 Edge이며 `MEWE_BROWSER_EXE`로 변경합니다.
 
 ```powershell
+node tests/review-ui.cjs
+node tests/sharing-ui.cjs
 node tests/ui-dual.cjs
 ```
+
+`review-ui.cjs`는 새/기존 탭 모음 저장, 합계 10개 제한, 닫기 확인·취소·지연 응답을 확인합니다. `sharing-ui.cjs`는 명시적 붙여넣기, 클립보드 오류, 서버 조회 분리, 카드 미리보기와 공유 안내를 모의 서비스로 확인합니다.
 
 이 시험은 탭 API를 모의해 페이지 선택, 듀얼탭 A/B 표시, 수정·제거, 공유 안내, Enter 입력과 좁은 화면을 확인합니다. 삭제 확인의 취소·실패·재시도도 확인합니다. 실제 웨일 듀얼탭 API 시험과 구분합니다.
 
@@ -34,11 +38,11 @@ node tests/ui-dual.cjs
 | --- | --- |
 | `node tests/native-capture.cjs` | 일반탭·듀얼탭 양쪽 수집과 순서 |
 | `node tests/native-reorder.cjs` | 드래그·키보드 이동, 취소, 저장 유지 |
-| `node tests/native-close.cjs` | 앱이 연 탭 닫기, 기존 탭·다른 작업공간 보존 |
+| `node tests/native-close.cjs` | 앱이 연 탭 닫기, 기존 탭·다른 탭 모음 보존 |
 | `node tests/native-files.cjs` | PDF 수집, 한글·특수문자 경로, 파일 열기 |
 | `node tests/native-file-dual.cjs` | 파일/웹·파일/파일 듀얼탭 복원과 닫기 |
 | `node tests/native-sharing.cjs` | 아래 에뮬레이터로 두 프로필 간 공유·받기 |
-| `node tests/native-lifecycle.cjs` | 브라우저 재시작·같은 설치 경로 업데이트 후 작업공간·최초 동의 보존 |
+| `node tests/native-lifecycle.cjs` | 브라우저 재시작·같은 설치 경로 업데이트 후 탭 모음·최초 동의 보존 |
 
 `MEWE_EXTENSION_ROOT`에 ZIP 압축 해제 폴더를 지정하면 실제 패키지로 시험합니다. 수명주기 시험은 `MEWE_BASELINE_EXTENSION_ROOT`를 이전 전달본으로 지정할 수 있으며, 이전본과 새 패키지를 임시 경로에 복사해 시험합니다. 기존 사용자의 설치 폴더·브라우저 데이터는 변경하지 않습니다.
 

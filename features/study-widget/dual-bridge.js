@@ -2,7 +2,7 @@ import { pageUrl } from "../../shared/validation.js";
 // File navigation uses the tabs API; web navigation stays in this left-hand document.
 try {
   const { token, left: value } = JSON.parse(decodeURIComponent(location.hash.slice(1)));
-  if (!/^[a-f0-9-]{36}$/.test(token)) throw new Error("잘못된 작업공간 요청이에요.");
+  if (!/^[a-f0-9-]{36}$/.test(token)) throw new Error("잘못된 탭 모음 요청이에요.");
   const left = pageUrl(value), initialWidth = innerWidth;
   const link = document.createElement("a");
   link.href = new URL("dual-target.html#" + token, location.href).href;

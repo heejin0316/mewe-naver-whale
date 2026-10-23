@@ -2,18 +2,26 @@ import * as browser from "./shared/browser.js";
 import { workspaceStore } from "./shared/workspace-store.js";
 import { request } from "./shared/messages.js";
 import { modal } from "./shared/modal.js";
-import { el, button } from "./shared/dom.js";
+import { el, button, busy } from "./shared/dom.js";
 import { mount as mountWorkspaces } from "./features/study-widget/view.js";
 import { openAbout } from "./features/about/view.js";
 
 let unmount = () => {}, toastTimer;
 const container = document.querySelector("#view");
-function toast(message) {
+function toast(message, { duration = 1500, fade = false, title = "" } = {}) {
   clearTimeout(toastTimer); document.querySelector("#toast")?.remove();
   const node = el("div", { id: "toast", className: "toast", role: "status" }, message);
+  if (title) {
+    node.classList.add("toast-copy");
+    node.replaceChildren(el("strong", {}, title), el("span", {}, message));
+  }
   // A modal dialog is in the browser's top layer: its toast must live inside it.
   (document.querySelector("dialog[open]") || document.body).append(node);
-  toastTimer = setTimeout(() => { node.remove(); }, 1500);
+  if (fade) {
+    node.classList.add("toast-fade");
+    node.style.setProperty("--toast-delay", `${Math.max(0, duration - 250)}ms`);
+  }
+  toastTimer = setTimeout(() => { node.remove(); }, duration);
 }
 function navigate(route) {
   if (!modal.close()) return;
@@ -27,16 +35,29 @@ async function launch(value, previewId = null, pageIds = null) {
     if (result.failed.length) {
       const sheet = modal.open("열지 못한 페이지"); if (!sheet) return;
       sheet.body.append(el("ul", {}, ...result.failed.map((f) => el("li", {}, `${f.page.title}: ${f.message}`))));
-      const remaining = { id: value?.id, name: value?.name || "공유 작업공간", pages: result.failed.map((f) => ({ ...f.page, openMode: "tab", dualGroupId: null })) };
+      const remaining = { id: value?.id, name: value?.name || "공유 탭 모음", pages: result.failed.map((f) => ({ ...f.page, openMode: "tab", dualGroupId: null })) };
       sheet.footer.append(button("다시 열기", async () => { sheet.close(true); await launch(remaining, previewId, previewId ? remaining.pages.map((p) => p.id) : null); }, "btn primary full"));
     } else toast(result.fallbackGroups ? `${result.opened.length}개 페이지를 열었어요. 나란히 보기는 사용할 수 없어 일반 탭으로 열었어요.` : `${result.opened.length}개 페이지를 열었어요.`);
   } catch (error) { toast(error.message); }
 }
 async function closeWorkspace(value) {
-  const result = await request("WORKSPACE_CLOSE", { id: value.id });
-  if (result.protectedCount) toast("다른 페이지와 합쳐진 듀얼탭은 남겨두었어요. 듀얼탭을 분리한 뒤 다시 닫아 주세요.");
-  else if (result.remaining.length) toast("아직 닫히지 않은 페이지가 있어요. 페이지를 확인한 뒤 다시 눌러 주세요.");
-  else toast(result.closed ? `${result.closed}개 페이지를 닫았어요.` : "이미 모든 페이지가 닫혀 있어요.");
+  const sheet = modal.open("열린 탭을 모두 닫을까요?");
+  if (!sheet) return;
+  sheet.body.closest("dialog").classList.add("close-confirmation");
+  sheet.body.append(el("p", {}, "이 탭 모음으로 연 탭이 모두 닫혀요. 다른 웹페이지로 이동한 탭도 함께 닫힐 수 있어요."));
+  const cancel = button("취소", () => sheet.close(), "btn full");
+  const confirm = button("모두 닫기", event => busy(event.currentTarget, async () => {
+    cancel.disabled = true;
+    try {
+      const result = await request("WORKSPACE_CLOSE", { id: value.id });
+      if (sheet.body.isConnected) sheet.close(true);
+      if (result.protectedCount) toast("다른 페이지와 합쳐진 듀얼탭은 남겨두었어요. 듀얼탭을 분리한 뒤 다시 닫아 주세요.");
+      else if (result.remaining.length) toast("아직 닫히지 않은 페이지가 있어요. 페이지를 확인한 뒤 다시 눌러 주세요.");
+      else toast(result.closed ? `${result.closed}개 페이지를 닫았어요.` : "이미 모든 페이지가 닫혀 있어요.");
+    } finally { cancel.disabled = false; }
+  }, sheet.error), "btn primary full");
+  sheet.footer.append(el("div", { className: "actions" }, cancel, confirm));
+  cancel.focus();
 }
 const services = { navigate, modal, toast, workspaceStore, browser, launch, closeWorkspace,
   sharing: { create: (workspace) => request("SHARE_CREATE", { workspace }), get: (code) => request("SHARE_GET", { code }), save: (previewId) => request("SHARE_SAVE", { previewId }), launch: (previewId) => launch(null, previewId) } };

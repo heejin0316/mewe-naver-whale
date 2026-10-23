@@ -58,7 +58,7 @@ async function initialize() {
 api.runtime.onInstalled.addListener(() => { queue(initialize).catch(console.error); });
 api.runtime.onMessage.addListener((message, sender, respond) => {
   if (sender.id !== api.runtime.id || !sender.url?.startsWith(api.runtime.getURL("")) || !message?.requestId) return false;
-  const allowed = ["WORKSPACES_LIST", "WORKSPACE_SAVE", "WORKSPACE_DELETE", "WORKSPACE_MOVE", "WORKSPACE_LAUNCH", "WORKSPACE_CLOSE", "SHARE_CREATE", "SHARE_GET", "SHARE_SAVE", "SHARE_LAUNCH", "SHARE_CONSENT_STATUS", "SHARE_CONSENT_ACCEPT", "SHARE_CONSENT_CLEAR"];
+  const allowed = ["WORKSPACES_LIST", "WORKSPACE_SAVE", "WORKSPACE_APPEND", "WORKSPACE_DELETE", "WORKSPACE_MOVE", "WORKSPACE_LAUNCH", "WORKSPACE_CLOSE", "SHARE_CREATE", "SHARE_GET", "SHARE_SAVE", "SHARE_LAUNCH", "SHARE_CONSENT_STATUS", "SHARE_CONSENT_ACCEPT", "SHARE_CONSENT_CLEAR"];
   if (!allowed.includes(message.type)) return false;
   const execute = async () => {
     requireWhale();
@@ -95,7 +95,7 @@ api.runtime.onMessage.addListener((message, sender, respond) => {
       await write("mewe.workspaces", next); return next.at(-1);
     });
     if (message.type === "SHARE_LAUNCH") {
-      if (launching) throw new Error("작업공간을 처리하고 있어요. 잠시 기다려 주세요.");
+      if (launching) throw new Error("탭 모음을 처리하고 있어요. 잠시 기다려 주세요.");
       launching = true;
       try {
         let clean = await getPreview(message.payload.previewId);
@@ -107,11 +107,11 @@ api.runtime.onMessage.addListener((message, sender, respond) => {
       } finally { launching = false; }
     }
     if (["WORKSPACE_LAUNCH", "WORKSPACE_CLOSE"].includes(message.type)) {
-      if (launching) throw new Error("작업공간을 처리하고 있어요. 잠시 기다려 주세요.");
+      if (launching) throw new Error("탭 모음을 처리하고 있어요. 잠시 기다려 주세요.");
       launching = true;
       try {
         const id = message.type === "WORKSPACE_CLOSE" ? message.payload.id : message.payload.workspace?.id;
-        if (typeof id !== "string" || !(await read("mewe.workspaces", [])).some((w) => w.id === id)) throw new Error("작업공간을 찾을 수 없어요.");
+        if (typeof id !== "string" || !(await read("mewe.workspaces", [])).some((w) => w.id === id)) throw new Error("탭 모음을 찾을 수 없어요.");
         // Session storage expires with the browser, so IDs cannot close later sessions' tabs.
         const existing = await sessionQueue(readLaunches);
         if (message.type === "WORKSPACE_CLOSE") {

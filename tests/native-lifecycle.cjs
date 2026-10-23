@@ -27,7 +27,7 @@ function install(source) {
     assert.ok(worker, "extension worker loaded after restart/update");
     const page = await context.newPage();
     await page.goto(worker.url().replace("background.js", "sidebar.html"));
-    await page.getByRole("button", { name: "지금 작업공간 저장", exact: true }).waitFor();
+    await page.getByRole("button", { name: /^(지금 작업공간 저장|탭 저장하기)$/ }).waitFor();
     return page;
   }
   const stored = page => page.evaluate(async () => chrome.storage.local.get(["mewe.workspaces", "mewe.sharingConsent"]));
@@ -52,7 +52,7 @@ function install(source) {
     page = await launch();
     await page.getByRole("article", { name: "업데이트 보존 확인", exact: true }).waitFor();
     assert.deepEqual(await stored(page), before, "in-place update preserves data, IDs, order, pairing and consent timestamp");
-    await page.getByRole("button", { name: "공유 작업공간 받기", exact: true }).click();
+    await page.getByRole("button", { name: "공유 코드 입력", exact: true }).click();
     await page.waitForFunction(() => !document.querySelector(".sheet-footer button")?.disabled);
     assert.equal(await page.locator(".share-consent input").count(), 0, "same consent scope is reused after update");
     const auth = await page.evaluate(async () => (await chrome.storage.local.get("mewe.firebaseAuth"))["mewe.firebaseAuth"]);

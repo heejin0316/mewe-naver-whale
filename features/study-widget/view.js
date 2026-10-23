@@ -6,41 +6,52 @@ import { icon } from "../../shared/icons.js";
 import { openShare, openReceive } from "../sharing/view.js";
 
 export function mount(container, services) {
-  let alive = true, revision = 0;
+  let alive = true, revision = 0, managing = false;
   container.className = "view study-widget";
   const cards = el("div", { className: "workspace-list" });
   const reorder = workspaceReorder(container, cards, { move: (id, beforeId) => services.workspaceStore.move(id, beforeId), refresh, toast: services.toast });
   const errorBox = el("p", { className: "error", role: "alert", hidden: true });
   const total = el("span", { className: "workspace-total" }, "0");
+  const listHeading = el("h2", { tabIndex: -1 }, "저장한 탭 모음", total);
   function confirmDelete(value) {
-    const sheet = services.modal.open("작업공간을 삭제할까요?");
+    const sheet = services.modal.open("탭 모음을 삭제할까요?");
     if (!sheet) return;
     sheet.body.append(
       el("h3", {}, value.name),
-      el("p", {}, "삭제한 작업공간은 복구할 수 없어요."),
+      el("p", {}, "삭제한 탭 모음은 복구할 수 없어요."),
       el("p", { className: "muted" }, "이미 열어둔 페이지와 전달한 공유본은 그대로 남아요.")
     );
     const cancel = button("취소", () => sheet.close(), "btn full");
     const remove = button("삭제", event => busy(event.currentTarget, async () => {
       await services.workspaceStore.remove(value.id);
       sheet.close(true);
-      services.toast("작업공간을 삭제했어요.");
+      services.toast("탭 모음을 삭제했어요.");
     }, sheet.error), "btn danger full");
     sheet.footer.append(el("div", { className: "actions" }, cancel, remove));
     cancel.focus();
   }
-  const capture = button("지금 작업공간 저장", (event) => busy(event.currentTarget, async () => {
+  const capture = button("탭 저장하기", (event) => busy(event.currentTarget, async () => {
     const result = await services.browser.currentTabs();
     if (alive) openEditor(services, null, result.pages);
   }, services.toast), "btn primary full");
   capture.prepend(icon("save"));
+  const manage = button("저장한 탭 관리", () => {
+    managing = !managing;
+    manage.textContent = managing ? "관리 완료" : "저장한 탭 관리";
+    manage.setAttribute("aria-pressed", String(managing));
+    listHeading.firstChild.nodeValue = managing ? "저장한 탭 관리" : "저장한 탭 모음";
+    refresh();
+    listHeading.scrollIntoView({ block: "start", behavior: "smooth" });
+    listHeading.focus({ preventScroll: true });
+  }, "btn");
+  manage.setAttribute("aria-pressed", "false");
   container.replaceChildren(
-    el("div", { className: "intro" }, el("span", { className: "intro-label" }, "MY WORKSPACE"), el("h1", {}, "나의 공부, 이어서."), el("p", { className: "muted" }, "열어둔 페이지를 작업공간에 저장하고, 필요할 때 다시 열어보세요.")),
+    el("div", { className: "intro" }, el("span", { className: "intro-label" }, "MY TABS"), el("h1", {}, "나의 공부, 이어서."), el("p", { className: "muted" }, "필요한 탭을 저장하고, 다음에도 한 번에 열어보세요.")),
     capture,
     el("div", { className: "actions" },
-      button("＋ 새 작업공간", () => openEditor(services), "btn"),
-      button("공유 작업공간 받기", () => openReceive(services), "btn")
-    ), el("div", { className: "workspace-section-head" }, el("h2", {}, "내 작업공간", total), el("span", {}, "드래그로 순서 변경")), errorBox, cards
+      button("공유 코드 입력", () => openReceive(services), "btn"),
+      manage
+    ), el("div", { className: "workspace-section-head" }, listHeading, el("span", {}, "드래그로 순서 변경")), errorBox, cards
   );
 
   async function refresh() {
@@ -50,7 +61,7 @@ export function mount(container, services) {
       if (!alive || token !== revision) return;
       reorder.cancel(); errorBox.hidden = true; cards.replaceChildren();
       total.textContent = String(items.length);
-      if (!items.length) cards.append(el("div", { className: "empty" }, icon("folder"), el("strong", {}, "첫 작업공간을 만들어보세요"), el("p", {}, "지금 열어둔 공부 페이지를", el("br"), "한곳에 저장할 수 있어요.")));
+      if (!items.length) cards.append(el("div", { className: "empty" }, icon("folder"), el("strong", {}, "첫 탭 모음을 만들어보세요"), el("p", {}, "지금 열어둔 공부 페이지를", el("br"), "한곳에 저장할 수 있어요.")));
       items.forEach((w) => {
         const groups = groupPages(w.pages);
         const dualCount = groups.filter((group) => group.dual).length;
@@ -60,6 +71,7 @@ export function mount(container, services) {
         const menu = el("div", { className: "workspace-menu", hidden: true });
         const toggle = button("⋮", () => { menu.hidden = !menu.hidden; }, "icon-button");
         toggle.setAttribute("aria-label", `${w.name} 메뉴`);
+        toggle.hidden = managing;
         menu.append(
           button("수정", () => { menu.hidden = true; openEditor(services, w); }, "text-button"),
           button("삭제", () => { menu.hidden = true; confirmDelete(w); }, "text-button danger")
@@ -73,12 +85,18 @@ export function mount(container, services) {
         );
         const running = w.openedCount > 0;
         const action = button("", (event) => busy(event.currentTarget, () => running ? services.closeWorkspace(w) : services.launch(w), services.toast), `btn ${running ? "workspace-close" : "primary workspace-open"}`);
-        action.setAttribute("aria-label", running ? "작업공간 닫기" : "작업공간 열기");
-        action.append(el("span", { className: "workspace-action-prefix", "aria-hidden": "true" }, "작업공간 "), running ? "닫기" : "열기");
+        action.textContent = running ? "한 번에 닫기" : "한 번에 열기";
+        action.setAttribute("aria-label", action.textContent);
         const share = button("", () => { menu.hidden = true; openShare(services, w); }, "btn workspace-share");
-        share.setAttribute("aria-label", "작업공간 공유");
-        share.append(el("span", { className: "workspace-action-prefix", "aria-hidden": "true" }, "작업공간 "), "공유");
+        share.setAttribute("aria-label", "탭 모음 공유");
+        share.textContent = "탭 모음 공유";
         card.querySelector(".workspace-actions").append(action, share);
+        if (managing) {
+          card.querySelector(".workspace-actions").replaceChildren(
+            button("수정", () => openEditor(services, w), "btn workspace-share workspace-edit"),
+            button("삭제", () => confirmDelete(w), "btn workspace-delete")
+          );
+        }
         if (w.openedCount > 0) {
           card.querySelector(".workspace-heading").append(el("span", { className: "workspace-running" }, `${w.openedCount}개 페이지 열림`));
         }

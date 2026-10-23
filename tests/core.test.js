@@ -9,6 +9,68 @@ import { closeTrackedTabs } from "../features/study-widget/closer.js";
 const page = (id, extra = {}) => ({ id, title: `페이지 ${id}`, url: `https://example.com/${id}`, openMode: "tab", dualGroupId: null, ...extra });
 const sample = () => ({ name: "이화의 논문 📚", pages: [page("a"), page("b")] });
 
+test("기존 탭 모음에 추가하면 이름·ID·생성시각·기존 페이지·목록 순서가 보존된다", () => {
+  const [target] = mutateWorkspaces([], "WORKSPACE_SAVE", sample(), 100);
+  const items = mutateWorkspaces([target], "WORKSPACE_SAVE", { name: "다른 모음", pages: [page("other")] }, 200);
+  const before = structuredClone(items);
+  const next = mutateWorkspaces(items, "WORKSPACE_APPEND", { id: target.id, pages: [page("new")] }, 300);
+  assert.deepEqual(items, before, "입력 배열과 기존 페이지를 변경하지 않는다");
+  assert.deepEqual(next.map((item) => item.id), items.map((item) => item.id));
+  assert.equal(next[0].name, target.name);
+  assert.equal(next[0].createdAt, 100);
+  assert.equal(next[0].updatedAt, 300);
+  assert.deepEqual(next[0].pages.slice(0, 2), target.pages);
+  assert.equal(next[0].pages[2].url, page("new").url);
+  assert.notEqual(next[0].pages[2].id, "new");
+  assert.deepEqual(next[1], items[1]);
+});
+
+test("같은 주소와 캡처 ID가 있어도 독립적인 새 페이지로 추가한다", () => {
+  const [target] = mutateWorkspaces([], "WORKSPACE_SAVE", sample(), 100);
+  const [added] = mutateWorkspaces([target], "WORKSPACE_APPEND", { id: target.id, pages: [target.pages[0]] }, 100);
+  assert.equal(added.pages.length, 3);
+  assert.equal(added.pages[2].url, target.pages[0].url);
+  assert.notEqual(added.pages[2].id, target.pages[0].id);
+  assert.equal(new Set(added.pages.map((item) => item.id)).size, 3);
+  assert.equal(added.updatedAt, 101);
+});
+
+test("기존·추가 듀얼탭의 그룹 이름이 같아도 별도 쌍으로 보존한다", () => {
+  const pair = [page("a", { openMode: "dual", dualGroupId: "A" }), page("b", { openMode: "dual", dualGroupId: "A" })];
+  const [target] = mutateWorkspaces([], "WORKSPACE_SAVE", { name: "듀얼탭 모음", pages: pair }, 100);
+  const [added] = mutateWorkspaces([target], "WORKSPACE_APPEND", { id: target.id, pages: pair }, 200);
+  assert.deepEqual(added.pages.slice(0, 2), target.pages);
+  assert.notEqual(added.pages[2].dualGroupId, "A");
+  assert.equal(added.pages[2].dualGroupId, added.pages[3].dualGroupId);
+  assert.equal(new Set(added.pages.map((item) => item.id)).size, 4);
+  assert.deepEqual(groupPages(workspace(added).pages).map((group) => group.dual), [true, true]);
+  const draft = prepareRows(pair); draft[0].selected = false;
+  const [single] = mutateWorkspaces([target], "WORKSPACE_APPEND", { id: target.id, pages: selectedPages(draft) }, 200);
+  assert.equal(single.pages[2].openMode, "tab");
+  assert.equal(single.pages[2].dualGroupId, null);
+});
+
+test("추가 후 10개는 허용하고 초과·빈 선택·삭제된 대상은 변경 없이 거부한다", () => {
+  const [target] = mutateWorkspaces([], "WORKSPACE_SAVE", { name: "9개", pages: Array.from({ length: 9 }, (_, i) => page(String(i))) }, 100);
+  const input = [target], before = structuredClone(input);
+  const [full] = mutateWorkspaces(input, "WORKSPACE_APPEND", { id: target.id, pages: [page("last")] }, 200);
+  assert.equal(full.pages.length, 10);
+  assert.throws(() => mutateWorkspaces(input, "WORKSPACE_APPEND", { id: target.id, pages: sample().pages }), /10개를 넘어요/);
+  assert.throws(() => mutateWorkspaces(input, "WORKSPACE_APPEND", { id: target.id, pages: [] }), /1~10개/);
+  assert.throws(() => mutateWorkspaces(input, "WORKSPACE_APPEND", { id: "deleted", pages: [page("last")] }), /존재하지 않는 탭 모음/);
+  assert.deepEqual(input, before);
+});
+
+test("직렬 큐에서 연속 추가한 페이지를 모두 보존한다", async () => {
+  let items = mutateWorkspaces([], "WORKSPACE_SAVE", sample(), 100);
+  const id = items[0].id, queue = serialQueue();
+  await Promise.all(["first", "second"].map((next) => queue(async () => {
+    items = mutateWorkspaces(items, "WORKSPACE_APPEND", { id, pages: [page(next)] }, 200);
+  })));
+  assert.deepEqual(items[0].pages.map((item) => item.url), [...sample().pages, page("first"), page("second")].map((item) => item.url));
+  assert.equal(items[0].updatedAt, 201);
+});
+
 test("로컬 파일 주소와 따옴표 포함 Windows 경로의 한글·공백·특수문자 보존", () => {
   const path = 'C:\\자료\\강의 #1 100%.pdf';
   const url = pageUrl(path);

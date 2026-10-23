@@ -35,7 +35,7 @@ export function workspaceReorder(container, list, { move, refresh, toast }) {
     try {
       await move(id, beforeId);
       await refresh();
-      toast("작업공간 순서를 저장했어요.");
+      toast("탭 모음 순서를 저장했어요.");
     } catch (error) {
       await refresh(); toast(error.message);
     } finally {

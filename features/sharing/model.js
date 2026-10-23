@@ -26,7 +26,7 @@ export function prepareShare(input) {
 }
 export function sharedWorkspace(input) {
   const clean = workspace(input);
-  if (clean.pages.some((p) => !/^https?:/.test(p.url))) throw new Error("공유 작업공간에는 웹 주소만 포함할 수 있어요.");
+  if (clean.pages.some((p) => !/^https?:/.test(p.url))) throw new Error("공유 탭 모음에는 웹 주소만 포함할 수 있어요.");
   return clean;
 }
 export function importedWorkspace(input) {

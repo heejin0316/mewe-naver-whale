@@ -1,0 +1,8 @@
+.share-code-entry{display:flex;align-items:stretch;gap:8px;min-width:0}
+.sharing .field>label{display:block;line-height:1.4;margin:0 0 8px;color:#444e58;font-size:12px;font-weight:650}
+.share-code-entry .share-code{flex:1;min-width:0;width:0;letter-spacing:.6px}
+.share-code-entry .share-paste{flex:0 0 auto;padding:10px 12px;white-space:nowrap}
+.sharing .share-preview{cursor:default}
+.sharing .share-preview .workspace-card-header h3{font-size:16px;margin:0}
+.sharing .share-preview .site-list{margin-bottom:0}
+@media(max-width:340px){.share-code-entry{gap:6px}.share-code-entry .share-code{font-size:13px;padding-left:10px;padding-right:8px}.share-code-entry .share-paste{font-size:12px;padding:10px}}

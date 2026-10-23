@@ -20,7 +20,7 @@ export function decodeValue(value) {
 }
 function userError(error, operation) {
   const code = error.code || "";
-  if (/RESOURCE_EXHAUSTED|TOO_MANY_ATTEMPTS|QUOTA_EXCEEDED/.test(code) || error.status === 429) return new Error("공유 서비스의 사용 한도에 도달했어요. 나중에 다시 시도해 주세요. 개인 작업공간은 계속 사용할 수 있어요.");
+  if (/RESOURCE_EXHAUSTED|TOO_MANY_ATTEMPTS|QUOTA_EXCEEDED/.test(code) || error.status === 429) return new Error("공유 서비스의 사용 한도에 도달했어요. 나중에 다시 시도해 주세요. 개인 탭 모음은 계속 사용할 수 있어요.");
   if (/OPERATION_NOT_ALLOWED|ADMIN_ONLY_OPERATION/.test(code)) return new Error("공유 서비스를 이용할 수 없어요. 잠시 후 다시 시도하거나 앱 정보의 문의 주소로 알려 주세요.");
   if (/PERMISSION_DENIED/.test(code)) return new Error(operation === "get" ? "공유 코드를 찾을 수 없거나 만료되었어요. 보낸 사람에게 새 코드를 요청해 주세요." : "공유 코드를 저장하지 못했어요. 잠시 후 다시 시도하거나 앱 정보의 문의 주소로 알려 주세요.");
   if (error.status === 404) return new Error("공유 코드를 찾을 수 없어요. 코드를 다시 확인해 주세요.");

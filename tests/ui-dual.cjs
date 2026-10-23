@@ -5,7 +5,7 @@ const root = path.resolve(__dirname, "..");
 const server = http.createServer((req, res) => {
   if (req.url === "/fixture") {
     res.setHeader("Content-Type", "text/html; charset=utf-8");
-    return res.end('<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/shared/base.css"><link rel="stylesheet" href="/features/study-widget/style.css"><link rel="stylesheet" href="/shared/refinement.css"><body><header class="app-header"><div class="brand"><img src="/assets/icons/mark.svg" width="32" height="32" alt=""><strong>ME:WE</strong></div></header><main id="view"></main></body></html>');
+    return res.end('<!doctype html><html lang="ko"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="/shared/base.css"><link rel="stylesheet" href="/features/study-widget/style.css"><link rel="stylesheet" href="/shared/refinement.css"><link rel="stylesheet" href="/features/study-widget/save-destination.css"><link rel="stylesheet" href="/features/sharing/style.css"><body><header class="app-header"><div class="brand"><img src="/assets/icons/mark.svg" width="32" height="32" alt=""><strong>ME:WE</strong></div></header><main id="view"></main></body></html>');
   }
   const file = path.resolve(root, "." + new URL(req.url, "http://localhost").pathname);
   if (!file.startsWith(root + path.sep) || !fs.existsSync(file) || !fs.statSync(file).isFile()) { res.writeHead(404); return res.end(); }
@@ -42,6 +42,7 @@ const server = http.createServer((req, res) => {
         workspaceStore: {
         list: async () => structuredClone(window.saved), subscribe: fn => { listener = fn; return () => {}; },
         save: async value => { window.saved = mutateWorkspaces(window.saved, "WORKSPACE_SAVE", value); await listener(); },
+        append: async (id, pages) => { window.saved = mutateWorkspaces(window.saved, "WORKSPACE_APPEND", { id, pages }); await listener(); },
         remove: async id => {
           if (window.failDelete) throw new Error("삭제 저장 실패 시험");
           window.saved = mutateWorkspaces(window.saved, "WORKSPACE_DELETE", { id });
@@ -50,16 +51,16 @@ const server = http.createServer((req, res) => {
       } };
       mount(document.querySelector("#view"), services);
     });
-    await page.getByRole("button", { name: "지금 작업공간 저장", exact: true }).click();
+    await page.getByRole("button", { name: "탭 저장하기", exact: true }).click();
     assert.equal(await page.locator(".page-choice").count(), 3);
     assert.deepEqual(await page.locator(".page-choice .dual-badge").allTextContents(), ["듀얼탭 A", "듀얼탭 B"]);
     assert.deepEqual(await page.locator(".page-choice strong").allTextContents(), ["이화여대 : 네이버 검색", "연세대 : 네이버 검색", "충남대 : 네이버 검색"]);
     assert.equal(await page.getByRole("button", {name:/다음 페이지와/}).count(), 0);
-    await page.getByLabel("작업공간 이름").fill("학교");
-    const pair = page.getByRole("checkbox", { name: "이화여대 : 네이버 검색 작업공간에 넣기" });
+    await page.getByLabel("탭 모음 이름").fill("학교");
+    const pair = page.getByRole("checkbox", { name: "이화여대 : 네이버 검색 탭 모음에 넣기" });
     await pair.uncheck();
     await page.getByText("2개 페이지 선택", { exact: true }).waitFor();
-    const rightCheckbox = page.getByRole("checkbox", { name: "연세대 : 네이버 검색 작업공간에 넣기" });
+    const rightCheckbox = page.getByRole("checkbox", { name: "연세대 : 네이버 검색 탭 모음에 넣기" });
     assert.equal(await rightCheckbox.isChecked(), true);
     assert.equal(await page.locator(".page-choice .dual-badge").count(), 0);
     assert.equal(await pair.evaluate(node => document.activeElement === node), true);
@@ -79,7 +80,7 @@ const server = http.createServer((req, res) => {
     assert.deepEqual(saved.pages.map(p => p.openMode), ["dual", "dual", "tab"]);
     assert.equal(saved.pages[0].dualGroupId, saved.pages[1].dualGroupId);
     await page.screenshot({ path: path.join(root, "test-results/dual-saved.png") });
-    await page.getByRole("button", { name: "작업공간 공유", exact: true }).click();
+    await page.getByRole("button", { name: "탭 모음 공유", exact: true }).click();
     await page.getByRole("dialog").waitFor();
     assert.equal(await page.locator(".share-pages li").count(), 3);
     assert.doesNotMatch(await page.locator(".sheet-body").innerText(), /Firebase|익명 사용자 ID/);
@@ -89,9 +90,9 @@ const server = http.createServer((req, res) => {
     await page.locator(".privacy-details summary").click();
     assert.equal(await page.locator(".share-pages li").count(), 3);
     await page.getByRole("button", { name: "닫기", exact: true }).click();
-    await page.getByRole("button", { name: "작업공간 열기", exact: true }).click();
-    await page.getByRole("button", { name: "작업공간 닫기", exact: true }).waitFor();
-    assert.equal(await page.getByRole("button", { name: "작업공간 열기", exact: true }).count(), 0);
+    await page.getByRole("button", { name: "한 번에 열기", exact: true }).click();
+    await page.getByRole("button", { name: "한 번에 닫기", exact: true }).waitFor();
+    assert.equal(await page.getByRole("button", { name: "한 번에 열기", exact: true }).count(), 0);
     await page.setViewportSize({ width: 320, height: 720 });
     const bounds = await page.locator(".workspace-actions .btn").evaluateAll(nodes => nodes.map(node => {
       const rect = node.getBoundingClientRect(); return { top: rect.top, height: rect.height, width: rect.width, fits: node.scrollWidth <= node.clientWidth };
@@ -101,8 +102,8 @@ const server = http.createServer((req, res) => {
     assert.equal(bounds[0].width, bounds[1].width);
     assert.ok(bounds.every(b => b.fits));
     await page.screenshot({ path: path.join(root, "test-results/workspace-actions-320.png") });
-    await page.getByRole("button", { name: "작업공간 닫기", exact: true }).click();
-    await page.getByRole("button", { name: "작업공간 열기", exact: true }).waitFor();
+    await page.getByRole("button", { name: "한 번에 닫기", exact: true }).click();
+    await page.getByRole("button", { name: "한 번에 열기", exact: true }).waitFor();
     await page.setViewportSize({ width: 390, height: 844 });
     await page.getByRole("button", { name: "학교 메뉴" }).click();
     await page.getByRole("button", { name: "수정", exact: true }).click();
@@ -117,18 +118,18 @@ const server = http.createServer((req, res) => {
     assert.equal(await page.getByRole("checkbox").count(), 0);
     const singleMenu = page.getByRole("button", { name: "충남대 : 네이버 검색 메뉴", exact: true });
     await singleMenu.click();
-    await page.getByRole("menuitem", { name: "작업공간에서 제거" }).waitFor();
+    await page.getByRole("menuitem", { name: "탭 모음에서 제거" }).waitFor();
     await page.screenshot({ path: path.join(root, "test-results/page-remove-menu-320.png") });
     await page.keyboard.press("Escape");
     assert.equal(await page.getByRole("menuitem").count(), 0);
     assert.equal(await page.getByRole("dialog").count(), 1);
     assert.equal(await singleMenu.evaluate(node => node === document.activeElement), true);
     await singleMenu.click();
-    await page.getByRole("menuitem", { name: "작업공간에서 제거" }).click();
+    await page.getByRole("menuitem", { name: "탭 모음에서 제거" }).click();
     assert.equal(await page.locator(".page-choice").count(), 2);
     assert.equal(await page.evaluate(() => window.saved[0].pages.length), 3);
     await page.getByRole("button", { name: "이화여대 : 네이버 검색 메뉴", exact: true }).click();
-    await page.getByRole("menuitem", { name: "작업공간에서 제거" }).click();
+    await page.getByRole("menuitem", { name: "탭 모음에서 제거" }).click();
     assert.equal(await page.locator(".page-choice .dual-badge").count(), 0);
     assert.deepEqual(await page.locator(".page-choice strong").allTextContents(), ["연세대 : 네이버 검색"]);
     await page.getByRole("button", { name: "＋ 링크 직접 추가", exact: true }).click();
@@ -150,11 +151,11 @@ const server = http.createServer((req, res) => {
     assert.deepEqual(await page.evaluate(() => window.saved[0].pages.map(p => [p.title, p.openMode, p.dualGroupId])), [["연세대 : 네이버 검색", "tab", null], ["example.com", "tab", null]]);
     await page.getByRole("button", { name: "학교 메뉴" }).click();
     await page.getByRole("button", { name: "수정", exact: true }).click();
-    await page.getByLabel("작업공간 이름").dispatchEvent("keydown", { key: "Enter", isComposing: true });
+    await page.getByLabel("탭 모음 이름").dispatchEvent("keydown", { key: "Enter", isComposing: true });
     assert.equal(await page.getByRole("dialog").count(), 1, "IME confirmation must not save");
     for (const title of ["연세대 : 네이버 검색", "example.com"]) {
       await page.getByRole("button", { name: title + " 메뉴", exact: true }).click();
-      await page.getByRole("menuitem", { name: "작업공간에서 제거" }).click();
+      await page.getByRole("menuitem", { name: "탭 모음에서 제거" }).click();
     }
     await page.getByText("페이지가 없어요. 저장하려면 링크를 추가해 주세요.", { exact: true }).waitFor();
     await page.getByRole("button", { name: "저장", exact: true }).click();
@@ -202,12 +203,12 @@ const server = http.createServer((req, res) => {
     assert.equal(await page.locator("dialog[open]").count(), 0);
     assert.equal(await page.evaluate(() => window.saved[0].pages.length), 2);
     for (const [removed, remaining] of [["이화여대", "연세대"], ["연세대", "이화여대"]]) {
-      await page.getByRole("button", { name: "지금 작업공간 저장", exact: true }).click();
+      await page.getByRole("button", { name: "탭 저장하기", exact: true }).click();
       const name = `${remaining}만 저장`;
-      await page.getByLabel("작업공간 이름").fill(name);
-      await page.getByRole("checkbox", { name: `${removed} : 네이버 검색 작업공간에 넣기` }).uncheck();
+      await page.getByLabel("탭 모음 이름").fill(name);
+      await page.getByRole("checkbox", { name: `${removed} : 네이버 검색 탭 모음에 넣기` }).uncheck();
       await page.getByText("2개 페이지 선택", { exact: true }).waitFor();
-      assert.equal(await page.getByRole("checkbox", { name: `${remaining} : 네이버 검색 작업공간에 넣기` }).isChecked(), true);
+      assert.equal(await page.getByRole("checkbox", { name: `${remaining} : 네이버 검색 탭 모음에 넣기` }).isChecked(), true);
       await page.screenshot({ path: path.join(root, `test-results/dual-one-side-${removed === "이화여대" ? "right" : "left"}.png`) });
       await page.getByRole("button", { name: "저장", exact: true }).click();
       await page.getByRole("button", { name: `${name} 메뉴` }).waitFor();
@@ -222,7 +223,7 @@ const server = http.createServer((req, res) => {
     async function askDelete() {
       await page.getByRole("button", { name: "연세대만 저장 메뉴", exact: true }).click();
       await page.getByRole("button", { name: "삭제", exact: true }).click();
-      return page.getByRole("dialog", { name: "작업공간을 삭제할까요?", exact: true });
+      return page.getByRole("dialog", { name: "탭 모음을 삭제할까요?", exact: true });
     }
     const deleteDialog = await askDelete();
     await page.screenshot({ path: path.join(root, "test-results/workspace-delete-320.png") });

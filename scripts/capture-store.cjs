@@ -9,7 +9,7 @@ const root = path.resolve(__dirname, '..');
   for (const name of ['manifest.json', 'sidebar.html', 'app.js', 'background.js', 'assets', 'shared', 'features']) fs.cpSync(path.join(root, name), path.join(extension, name), { recursive: true });
   fs.writeFileSync(path.join(extension, 'capture.html'), `<!doctype html><html lang="ko"><meta charset="utf-8"><title>ME:WE 스토어 이미지</title>
   <style>*{box-sizing:border-box}body{margin:0;width:1280px;height:800px;background:#f1f8f6;color:#203b36;font-family:'Malgun Gothic',sans-serif;overflow:hidden}.copy{position:absolute;left:72px;top:100px;width:600px}.brand{display:flex;align-items:center;gap:14px;font-size:25px;font-weight:bold}.brand img{width:48px;height:48px}h1{font-size:49px;letter-spacing:-2.5px;line-height:1.35;margin:55px 0 24px}p{font-size:21px;line-height:1.85;color:#536b66}.note{position:absolute;left:72px;bottom:49px;font-size:13px;color:#647a75}.frame{position:absolute;right:48px;top:24px;width:430px;height:752px;overflow:hidden;border-radius:23px;border:1px solid #d7e6e1;box-shadow:0 14px 45px #173b3020;background:white}iframe{border:0;width:100%;height:100%;display:block}</style>
-  <div class="copy"><div class="brand"><img src="assets/icons/mark.svg" alt="">ME:WE</div><h1>하던 공부를 저장하고,<br>다시 이어가세요.</h1><p>열어둔 페이지와 듀얼탭을 한곳에.<br>작업공간을 저장하고, 필요할 때 다시 열어요.</p></div><div class="note">네이버 웨일 사이드바 확장앱 · 실제 앱 화면 / 예시 자료</div><div class="frame"><iframe src="sidebar.html" title="ME:WE 실제 화면"></iframe></div></html>`);
+  <div class="copy"><div class="brand"><img src="assets/icons/mark.svg" alt="">ME:WE</div><h1>하던 공부를 저장하고,<br>다시 이어가세요.</h1><p>열어둔 페이지와 듀얼탭을 한곳에.<br>탭 모음을 저장하고, 필요할 때 다시 열어요.</p></div><div class="note">네이버 웨일 사이드바 확장앱 · 실제 앱 화면 / 예시 자료</div><div class="frame"><iframe src="sidebar.html" title="ME:WE 실제 화면"></iframe></div></html>`);
   const appDir = 'C:/Program Files/Naver/Naver Whale/Application';
   const version = fs.readdirSync(appDir).filter(n => /^\d+\./.test(n)).sort((a,b) => b.localeCompare(a,undefined,{numeric:true}))[0];
   const profile = path.join(temp,'profile');
@@ -31,11 +31,11 @@ const root = path.resolve(__dirname, '..');
     const output=path.join(root,'delivery/screenshots');fs.mkdirSync(output,{recursive:true});
     await page.evaluate(()=>document.fonts.ready);
     await page.screenshot({path:path.join(output,'01-workspaces.png')});
-    await frame.getByRole('button',{name:'작업공간 공유',exact:true}).first().click();
+    await frame.getByRole('button',{name:'탭 모음 공유',exact:true}).first().click();
     await frame.getByRole('dialog').waitFor();
     await frame.locator('.share-consent input').first().waitFor();
     await page.locator('h1').evaluate(n=>{n.replaceChildren('함께 볼 페이지를',document.createElement('br'),'코드 하나로 공유해요.');});
-    await page.locator('.copy p').evaluate(n=>{n.replaceChildren('공유할 페이지 목록을 확인하고,',document.createElement('br'),'팀원에게 작업공간을 전달하세요.');});
+    await page.locator('.copy p').evaluate(n=>{n.replaceChildren('공유할 페이지 목록을 확인하고,',document.createElement('br'),'팀원에게 탭 모음을 전달하세요.');});
     await page.screenshot({path:path.join(output,'02-sharing.png')});
     if(errors.length)throw new Error(errors.join('\n'));
     for(const name of fs.readdirSync(output)){const b=fs.readFileSync(path.join(output,name));if(b.readUInt32BE(16)!==1280||b.readUInt32BE(20)!==800)throw new Error('Wrong dimensions: '+name);}

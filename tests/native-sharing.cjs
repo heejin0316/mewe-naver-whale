@@ -38,7 +38,7 @@ function token(uid){const n=Math.floor(Date.now()/1000);return [Buffer.from(JSON
       await request('WORKSPACE_SAVE',{name:'파일만',pages:[p('강의.pdf','file:///C:/private/lecture.pdf')]});
     },base);
     await sender.bringToFront(); await sender.setViewportSize({width:390,height:844});
-    await sender.getByRole('article',{name:'공유 실험',exact:true}).getByRole('button',{name:'작업공간 공유',exact:true}).click();
+    await sender.getByRole('article',{name:'공유 실험',exact:true}).getByRole('button',{name:'탭 모음 공유',exact:true}).click();
     assert.equal(await sender.locator('.share-pages li').count(),3);assert.equal(await sender.locator('.share-excluded li').count(),1);
     assert.equal((await sender.locator('.sharing').textContent()).includes('file:///'),false);
     assert.equal(await sender.getByRole('button',{name:'공유 코드 복사',exact:true}).isDisabled(),true);
@@ -66,7 +66,7 @@ function token(uid){const n=Math.floor(Date.now()/1000);return [Buffer.from(JSON
     assert.equal(users,0,'failed consent storage prevents authentication');
     await senderWorker.evaluate(async()=>{const api=globalThis.whale || globalThis.chrome;api.storage.local.set=globalThis.originalStorageSet;delete globalThis.originalStorageSet;});
     await sender.getByRole('button',{name:'공유 코드 복사',exact:true}).click();
-    await sender.getByText('✓ 공유 코드가 복사되었어요.',{exact:true}).waitFor();
+    await sender.getByText('공유된 탭 모음은 독립적인 복사본입니다. 이후 수정사항은 자동으로 반영되지 않아요.',{exact:true}).waitFor();
     const code=await sender.getByLabel('생성된 공유 코드').inputValue();assert.match(code,/^[A-Z2-9]{4}-[A-Z2-9]{4}-[A-Z2-9]{4}$/);
     fs.mkdirSync(path.join(root,'test-results'),{recursive:true});await sender.screenshot({path:path.join(root,'test-results/sharing-send.png')});
     assert.equal(await sender.locator('dialog #toast').count(),1,'copy toast stays above modal backdrop');
@@ -80,21 +80,21 @@ function token(uid){const n=Math.floor(Date.now()/1000);return [Buffer.from(JSON
     assert.ok(consentBefore.acceptedAt);assert.ok(consentBefore.version);
     await sender.context().close();sender=await launch(1);
     sender.on('pageerror',e=>errors.push(e.message));
-    await sender.getByRole('button',{name:'공유 작업공간 받기',exact:true}).click();
-    await sender.getByRole('button',{name:'작업공간 확인',exact:true}).waitFor();
+    await sender.getByRole('button',{name:'공유 코드 입력',exact:true}).click();
+    await sender.getByRole('button',{name:'탭 불러오기',exact:true}).waitFor();
     await sender.waitForFunction(()=>!document.querySelector('.sheet-footer button')?.disabled);
     assert.equal(await sender.locator('.share-consent input').count(),0,'sender consent reused for receiving after browser restart');
     await sender.getByRole('button',{name:'닫기',exact:true}).click();
-    await sender.getByRole('article',{name:'파일만',exact:true}).getByRole('button',{name:'작업공간 공유',exact:true}).click();
+    await sender.getByRole('article',{name:'파일만',exact:true}).getByRole('button',{name:'탭 모음 공유',exact:true}).click();
     assert.equal(await sender.getByRole('button',{name:'공유 코드 복사',exact:true}).isDisabled(),true);
     await receiver.bringToFront();await receiver.setViewportSize({width:320,height:720});
     async function receive(first=false){
-      await receiver.getByRole('button',{name:'공유 작업공간 받기',exact:true}).click();
+      await receiver.getByRole('button',{name:'공유 코드 입력',exact:true}).click();
       await receiver.getByLabel('공유 코드',{exact:true}).fill(code);
       const before=users;
       if(first){
         await receiver.locator('.share-consent input').first().waitFor();
-        assert.equal(await receiver.getByRole('button',{name:'작업공간 확인',exact:true}).isDisabled(),true);
+        assert.equal(await receiver.getByRole('button',{name:'탭 불러오기',exact:true}).isDisabled(),true);
         await receiver.getByLabel('공유 코드',{exact:true}).press('Enter');
         assert.equal(users,before,'Enter cannot bypass consent');
         for(const box of await receiver.locator('.share-consent input').all())await box.check();
@@ -102,10 +102,11 @@ function token(uid){const n=Math.floor(Date.now()/1000);return [Buffer.from(JSON
         await receiver.waitForFunction(()=>!document.querySelector('.sheet-footer button')?.disabled);
         assert.equal(await receiver.locator('.share-consent input').count(),0,'repeat receipt skips consent');
       }
-      await receiver.getByRole('button',{name:'작업공간 확인',exact:true}).click();await receiver.getByRole('button',{name:'바로 열기',exact:true}).waitFor();
+      await receiver.getByRole('button',{name:'탭 불러오기',exact:true}).click();await receiver.getByRole('button',{name:'바로 열기',exact:true}).waitFor();
     }
     await receive(true);
-    assert.equal(await receiver.getByLabel('공유 코드',{exact:true}).count(),0);assert.equal(await receiver.locator('.sharing .dual-badge').count(),0);
+    assert.equal(await receiver.getByLabel('공유 코드',{exact:true}).count(),0);assert.equal(await receiver.locator('.sharing .dual-badge').count(),1);
+    assert.equal(await receiver.locator('.share-preview .saved-page').count(),3);
     assert.equal(await receiver.evaluate(()=>document.querySelector('.sheet-body').scrollWidth>document.querySelector('.sheet-body').clientWidth),false);
     await receiver.screenshot({path:path.join(root,'test-results/sharing-receive-320.png')});
     await receiver.getByRole('button',{name:'저장',exact:true}).click();await receiver.locator('.workspace-card').waitFor();
@@ -113,11 +114,15 @@ function token(uid){const n=Math.floor(Date.now()/1000);return [Buffer.from(JSON
     assert.equal(saved.length,1);assert.deepEqual(saved[0].pages.map(p=>p.openMode),['tab','dual','dual']);assert.notEqual(saved[0].pages[0].id,'네이버 검색');
     await receive();await receiver.getByRole('button',{name:'바로 열기',exact:true}).click();await receiver.getByText('3개 페이지를 열었어요.',{exact:true}).waitFor();
     assert.equal(await receiver.getByRole('dialog').count(),0);
-    assert.deepEqual(await receiver.evaluate(async()=> (await chrome.storage.local.get('mewe.workspaces'))['mewe.workspaces']),saved,'direct open does not save');
+    const savedAfterOpen=await receiver.evaluate(async()=> (await chrome.storage.local.get('mewe.workspaces'))['mewe.workspaces']);
+    assert.equal(savedAfterOpen.length,2,'direct open saves the received collection before launching');
+    assert.deepEqual(savedAfterOpen[0],saved[0],'opening a new copy preserves the earlier saved collection');
+    assert.notEqual(savedAfterOpen[1].id,saved[0].id,'direct open creates an independent saved collection');
+    await receiver.getByRole('article',{name:'공유 실험',exact:true}).last().getByRole('button',{name:'한 번에 닫기',exact:true}).waitFor();
     const captured=await receiver.evaluate(async()=>{const {currentTabs}=await import('./shared/browser.js');return currentTabs();});assert.deepEqual(captured.pages.map(p=>p.openMode),['tab','dual','dual']);
     assert.deepEqual(captured.pages.map(p=>p.url),[base+'/one',base+'/two',base+'/three']);
     await receiver.reload();
-    await receiver.getByRole('article',{name:'공유 실험',exact:true}).getByRole('button',{name:'작업공간 공유',exact:true}).click();
+    await receiver.getByRole('article',{name:'공유 실험',exact:true}).last().getByRole('button',{name:'탭 모음 공유',exact:true}).click();
     await receiver.waitForFunction(()=>!document.querySelector('.sheet-footer button')?.disabled);
     assert.equal(await receiver.locator('.share-consent input').count(),0,'receiver consent reused for sending');
     await receiver.getByRole('button',{name:'닫기',exact:true}).click();
@@ -125,20 +130,20 @@ function token(uid){const n=Math.floor(Date.now()/1000);return [Buffer.from(JSON
     await receiver.getByRole('button',{name:'이 기기에서 공유 사용 중지',exact:true}).click();
     await receiver.getByText('공유 사용을 중지했어요. 다시 이용할 때 동의를 받아요.',{exact:true}).waitFor();
     await receiver.getByRole('button',{name:'확인',exact:true}).click();
-    await receiver.getByRole('button',{name:'공유 작업공간 받기',exact:true}).click();
+    await receiver.getByRole('button',{name:'공유 코드 입력',exact:true}).click();
     await receiver.locator('.share-consent input').first().waitFor();
     assert.equal(await receiver.locator('.share-consent input:checked').count(),0,'stopping sharing clears consent');
-    assert.equal(await receiver.getByRole('button',{name:'작업공간 확인',exact:true}).isDisabled(),true);
+    assert.equal(await receiver.getByRole('button',{name:'탭 불러오기',exact:true}).isDisabled(),true);
     await receiver.getByRole('button',{name:'닫기',exact:true}).click();
     await receiver.evaluate(async()=>{
       await chrome.storage.local.set({'mewe.sharingConsent':{version:'old',processing:true,overseas:true,acceptedAt:new Date().toISOString()}});
     });
-    await receiver.getByRole('button',{name:'공유 작업공간 받기',exact:true}).click();
+    await receiver.getByRole('button',{name:'공유 코드 입력',exact:true}).click();
     await receiver.locator('.share-consent input').first().waitFor();
-    assert.equal(await receiver.getByRole('button',{name:'작업공간 확인',exact:true}).isDisabled(),true,'changed consent scope requires consent again');
+    assert.equal(await receiver.getByRole('button',{name:'탭 불러오기',exact:true}).isDisabled(),true,'changed consent scope requires consent again');
     for(const box of await receiver.locator('.share-consent input').all())await box.check();
     await receiver.getByRole('button',{name:'닫기',exact:true}).click();
-    await receiver.getByRole('button',{name:'공유 작업공간 받기',exact:true}).click();
+    await receiver.getByRole('button',{name:'공유 코드 입력',exact:true}).click();
     await receiver.locator('.share-consent input').first().waitFor();
     assert.equal(await receiver.locator('.share-consent input:checked').count(),0,'checking and dismissing does not remember consent');
     assert.deepEqual(await sender.evaluate(async()=> (await chrome.storage.local.get('mewe.sharingConsent'))['mewe.sharingConsent']),consentBefore,'repeat use preserves original consent timestamp');

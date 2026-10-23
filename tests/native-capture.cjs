@@ -63,10 +63,10 @@ const server = http.createServer((req, res) => {
     }
     await extension.bringToFront();
     for (const [removed, survivor] of [["이화여대", "연세대"], ["연세대", "이화여대"]]) {
-      await extension.getByRole("button", { name: "지금 작업공간 저장", exact: true }).click();
+      await extension.getByRole("button", { name: "탭 저장하기", exact: true }).click();
       await extension.getByText("6개 페이지 선택 · 듀얼탭 1개", { exact: true }).waitFor();
-      const checkbox = extension.getByRole("checkbox", { name: removed + " 작업공간에 넣기", exact: true });
-      const kept = extension.getByRole("checkbox", { name: survivor + " 작업공간에 넣기", exact: true });
+      const checkbox = extension.getByRole("checkbox", { name: removed + " 탭 모음에 넣기", exact: true });
+      const kept = extension.getByRole("checkbox", { name: survivor + " 탭 모음에 넣기", exact: true });
       const assertIndependent = async () => {
         await extension.getByText("5개 페이지 선택", { exact: true }).waitFor();
         assert.equal(await checkbox.isChecked(), false);
@@ -78,7 +78,7 @@ const server = http.createServer((req, res) => {
       await extension.locator(".page-choice").filter({ has: checkbox }).locator("strong").click();
       await assertIndependent();
       await checkbox.check(); await checkbox.press("Space"); await assertIndependent();
-      await extension.getByLabel("작업공간 이름", { exact: true }).fill("한쪽만 저장 " + survivor);
+      await extension.getByLabel("탭 모음 이름", { exact: true }).fill("한쪽만 저장 " + survivor);
       await extension.getByRole("button", { name: "저장", exact: true }).click();
       await extension.getByRole("dialog").waitFor({ state: "detached" });
       const saved = await extension.evaluate(async () => (await chrome.storage.local.get("mewe.workspaces"))["mewe.workspaces"]);

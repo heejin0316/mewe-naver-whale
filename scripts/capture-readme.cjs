@@ -28,7 +28,7 @@ const server = http.createServer((req, res) => {
         { id: "sample-course", name: "수업 자료", pages: [sample("p4", "온라인 강의실", "https://example.org/class"), sample("p5", "이번 주 읽을거리", "https://example.org/reading")], openedCount: 0 }
       ];
       globalThis.whale = {
-        runtime: { id: "readme-preview", getManifest: () => ({ version: "0.3.0" }), sendMessage: (message, done) => {
+        runtime: { id: "readme-preview", getManifest: () => ({ version: "0.3.1" }), sendMessage: (message, done) => {
           if (message.type === "SHARE_CONSENT_STATUS") return done({ requestId: message.requestId, ok: true, data: { accepted: false } });
           if (message.type !== "WORKSPACES_LIST") throw new Error("화면 촬영 중 변경 요청 금지");
           done({ requestId: message.requestId, ok: true, data: structuredClone(workspaces) });
@@ -40,7 +40,7 @@ const server = http.createServer((req, res) => {
     await page.evaluate(() => document.fonts.ready);
     fs.mkdirSync(path.join(root, "docs/images"), { recursive: true });
     await page.screenshot({ path: path.join(root, "docs/images/workspaces.png") });
-    await page.getByRole("button", { name: "작업공간 공유", exact: true }).first().click();
+    await page.getByRole("button", { name: "탭 모음 공유", exact: true }).first().click();
     await page.getByRole("dialog").waitFor();
     await page.locator(".share-consent input").first().waitFor();
     await page.screenshot({ path: path.join(root, "docs/images/sharing.png") });
