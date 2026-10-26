@@ -24,6 +24,6 @@
 - 아이콘 원본: `assets/icons/icon128.png`.
 - README 예시 화면: `docs/images/`. 실제 사이드바를 예시 데이터로 촬영한 소개용 이미지이며 스토어 제출 규격과 구분합니다. `node scripts/capture-readme.cjs`로 갱신합니다.
 - 기존 개발 검증 캡처: `test-results/`. 좁은 화면과 모의 데이터가 포함되어 있어 최종 제출 규격을 충족한 것으로 취급하지 않습니다.
-- 제출 후보 이미지: `delivery/screenshots/01-workspaces.png`, `02-sharing.png`. 각각 1280×800 PNG, 2026-10-12 촬영·시각 검수.
+- 제출 후보 이미지: `delivery/screenshots/01-workspaces.png`, `02-sharing.png`. 각각 1280×800 PNG, 2026-10-27 재촬영·시각 검수.
 
 개인정보·운영 정책 보완으로 UI가 달라지면 최신 화면으로 다시 촬영합니다.

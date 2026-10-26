@@ -51,7 +51,6 @@ export function workspaceReorder(container, list, { move, refresh, toast }) {
     const card = event.target.closest(".workspace-card");
     if (!card || blocked || saving || cards().length < 2) { event.preventDefault(); return; }
     dragged = card;
-    list.querySelectorAll(".workspace-menu").forEach((menu) => { menu.hidden = true; });
     event.dataTransfer.effectAllowed = "move";
     event.dataTransfer.setData("text/plain", card.dataset.workspaceId);
     pointerY = event.clientY;

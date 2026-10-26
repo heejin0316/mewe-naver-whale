@@ -1,5 +1,5 @@
 ME:WE 0.3.1 — 팀원 전달·웨일스토어 제출 자료
-검토일: 2026-10-23 / ewhale · 정희진 / h33jin.jeong@gmail.com
+자료 갱신일: 2026-10-27 / ewhale · 정희진 / h33jin.jeong@gmail.com
 
 [파일]
 MEWE-0.3.1.zip                 설치 및 스토어 업로드용 앱

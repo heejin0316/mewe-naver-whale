@@ -105,16 +105,18 @@ const server = http.createServer((req, res) => {
     await page.getByRole("button", { name: "한 번에 닫기", exact: true }).click();
     await page.getByRole("button", { name: "한 번에 열기", exact: true }).waitFor();
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.getByRole("button", { name: "학교 메뉴" }).click();
-    await page.getByRole("button", { name: "수정", exact: true }).click();
+    await page.getByRole("button", { name: "저장한 탭 관리", exact: true }).click();
+    assert.equal(await page.locator(".workspace-menu,.workspace-card-header>.icon-button").count(), 0);
+    const editCard = name => page.getByRole("article", { name, exact: true }).getByRole("button", { name: "수정", exact: true });
+    const deleteCard = name => page.getByRole("article", { name, exact: true }).getByRole("button", { name: "삭제", exact: true });
+    await editCard("학교").click();
     assert.deepEqual(await page.locator(".page-choice .dual-badge").allTextContents(), ["듀얼탭 A", "듀얼탭 B"]);
     await page.setViewportSize({ width: 320, height: 720 });
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth || [...document.querySelectorAll('.sheet-body, .page-choice')].some(node => node.scrollWidth > node.clientWidth)), false);
     await page.screenshot({ path: path.join(root, "test-results/dual-editor-320.png") });
     await page.getByRole("button", { name: "저장", exact: true }).click();
     assert.deepEqual(await page.evaluate(() => window.saved[0].pages.map(p => p.openMode)), ["dual", "dual", "tab"]);
-    await page.getByRole("button", { name: "학교 메뉴" }).click();
-    await page.getByRole("button", { name: "수정", exact: true }).click();
+    await editCard("학교").click();
     assert.equal(await page.getByRole("checkbox").count(), 0);
     const singleMenu = page.getByRole("button", { name: "충남대 : 네이버 검색 메뉴", exact: true });
     await singleMenu.click();
@@ -149,8 +151,7 @@ const server = http.createServer((req, res) => {
     assert.equal(await page.getByRole("dialog").count(), 1, "holding Enter must not save");
     await page.keyboard.press("Enter");
     assert.deepEqual(await page.evaluate(() => window.saved[0].pages.map(p => [p.title, p.openMode, p.dualGroupId])), [["연세대 : 네이버 검색", "tab", null], ["example.com", "tab", null]]);
-    await page.getByRole("button", { name: "학교 메뉴" }).click();
-    await page.getByRole("button", { name: "수정", exact: true }).click();
+    await editCard("학교").click();
     await page.getByLabel("탭 모음 이름").dispatchEvent("keydown", { key: "Enter", isComposing: true });
     assert.equal(await page.getByRole("dialog").count(), 1, "IME confirmation must not save");
     for (const title of ["연세대 : 네이버 검색", "example.com"]) {
@@ -211,18 +212,16 @@ const server = http.createServer((req, res) => {
       assert.equal(await page.getByRole("checkbox", { name: `${remaining} : 네이버 검색 탭 모음에 넣기` }).isChecked(), true);
       await page.screenshot({ path: path.join(root, `test-results/dual-one-side-${removed === "이화여대" ? "right" : "left"}.png`) });
       await page.getByRole("button", { name: "저장", exact: true }).click();
-      await page.getByRole("button", { name: `${name} 메뉴` }).waitFor();
+      await editCard(name).waitFor();
       const pages = await page.evaluate(name => window.saved.find(w => w.name === name).pages, name);
       assert.deepEqual(pages.map(p => [p.title, p.openMode, p.dualGroupId]), [[`${remaining} : 네이버 검색`, "tab", null], ["충남대 : 네이버 검색", "tab", null]]);
-      await page.getByRole("button", { name: `${name} 메뉴` }).click();
-      await page.getByRole("button", { name: "수정", exact: true }).click();
+      await editCard(name).click();
       assert.equal(await page.locator(".page-choice .dual-badge").count(), 0);
       await page.getByRole("button", { name: "닫기", exact: true }).click();
     }
     const beforeDelete = await page.evaluate(() => structuredClone(window.saved));
     async function askDelete() {
-      await page.getByRole("button", { name: "연세대만 저장 메뉴", exact: true }).click();
-      await page.getByRole("button", { name: "삭제", exact: true }).click();
+      await deleteCard("연세대만 저장").click();
       return page.getByRole("dialog", { name: "탭 모음을 삭제할까요?", exact: true });
     }
     const deleteDialog = await askDelete();

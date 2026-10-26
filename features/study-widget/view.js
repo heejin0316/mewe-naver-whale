@@ -46,7 +46,7 @@ export function mount(container, services) {
   }, "btn");
   manage.setAttribute("aria-pressed", "false");
   container.replaceChildren(
-    el("div", { className: "intro" }, el("span", { className: "intro-label" }, "MY TABS"), el("h1", {}, "나의 공부, 이어서."), el("p", { className: "muted" }, "필요한 탭을 저장하고, 다음에도 한 번에 열어보세요.")),
+    el("div", { className: "intro" }, el("h1", {}, "나의 공부, 이어서."), el("p", { className: "muted" }, "필요한 탭을 저장하고, 다음에도 한 번에 열어보세요.")),
     capture,
     el("div", { className: "actions" },
       button("공유 코드 입력", () => openReceive(services), "btn"),
@@ -68,16 +68,8 @@ export function mount(container, services) {
         const card = el("article", { className: "card workspace-card", draggable: true, tabIndex: 0, "data-workspace-id": w.id, "aria-label": w.name, "aria-keyshortcuts": "Alt+ArrowUp Alt+ArrowDown" });
         const tone = [...w.id].reduce((sum, char) => sum + char.charCodeAt(0), 0) % 7;
         const folder = el("span", { className: `workspace-symbol tone-${tone}`, "aria-hidden": "true" }, icon("folder"));
-        const menu = el("div", { className: "workspace-menu", hidden: true });
-        const toggle = button("⋮", () => { menu.hidden = !menu.hidden; }, "icon-button");
-        toggle.setAttribute("aria-label", `${w.name} 메뉴`);
-        toggle.hidden = managing;
-        menu.append(
-          button("수정", () => { menu.hidden = true; openEditor(services, w); }, "text-button"),
-          button("삭제", () => { menu.hidden = true; confirmDelete(w); }, "text-button danger")
-        );
         card.append(
-          el("div", { className: "workspace-card-header" }, folder, el("div", { className: "workspace-heading" }, el("h3", {}, w.name), el("p", { className: "muted" }, `${w.pages.length}개 페이지${dualCount ? ` · 듀얼탭 ${dualCount}개` : ""}`)), toggle, menu),
+          el("div", { className: "workspace-card-header" }, folder, el("div", { className: "workspace-heading" }, el("h3", {}, w.name), el("p", { className: "muted" }, `${w.pages.length}개 페이지${dualCount ? ` · 듀얼탭 ${dualCount}개` : ""}`))),
           el("div", { className: "site-list" }, ...groups.map((group) => group.dual
             ? el("div", { className: "saved-dual-group" }, el("span", { className: "dual-badge" }, "듀얼탭"), ...group.pages.map((p, i) => el("div", { className: "saved-page", title: p.title }, el("span", { className: "page-side", "aria-label": i === 0 ? "왼쪽 페이지" : "오른쪽 페이지" }, i === 0 ? "A" : "B"), el("span", { className: "saved-page-title" }, p.title))))
             : el("div", { className: "saved-page single-page", title: group.pages[0].title }, icon("page"), el("span", { className: "saved-page-title" }, group.pages[0].title)))),
@@ -87,7 +79,7 @@ export function mount(container, services) {
         const action = button("", (event) => busy(event.currentTarget, () => running ? services.closeWorkspace(w) : services.launch(w), services.toast), `btn ${running ? "workspace-close" : "primary workspace-open"}`);
         action.textContent = running ? "한 번에 닫기" : "한 번에 열기";
         action.setAttribute("aria-label", action.textContent);
-        const share = button("", () => { menu.hidden = true; openShare(services, w); }, "btn workspace-share");
+        const share = button("", () => openShare(services, w), "btn workspace-share");
         share.setAttribute("aria-label", "탭 모음 공유");
         share.textContent = "탭 모음 공유";
         card.querySelector(".workspace-actions").append(action, share);

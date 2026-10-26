@@ -10,7 +10,6 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .header-caption{font-size:11px;color:#777e86;white-space:nowrap}
 .view{padding:24px 20px 30px;scrollbar-width:thin;scrollbar-color:#d8dde1 transparent}
 .intro{margin-bottom:20px}
-.intro-label{display:block;font-size:10px;letter-spacing:1.2px;font-weight:700;color:#7b828a;margin-bottom:7px}
 .intro h1{font-size:24px;letter-spacing:-1px;line-height:1.4;font-weight:750}
 .intro .muted{margin:8px 0 0;line-height:1.7;font-size:12px;color:#777e86;word-break:keep-all}
 .btn{min-height:44px;padding:11px 14px;font-size:13px;font-weight:650;border-color:#e4e8eb;transition:background .15s,border-color .15s}
@@ -46,10 +45,6 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
 .workspace-heading .muted{font-size:10px;line-height:1.5;margin:3px 0 0;color:#777f89}
 .icon-button{color:#777f89}
 .icon-button:hover{background:#f3f5f7;color:#303943}
-.workspace-card-header>.icon-button{height:30px;width:26px;min-width:26px;line-height:1;align-self:flex-start;font-size:21px}
-.workspace-menu{position:absolute;right:0;top:34px;z-index:2;min-width:112px;padding:5px;background:#fff;border:1px solid #e4e8ed;border-radius:12px;box-shadow:0 8px 24px #1d29351a}
-.workspace-menu button{display:block;width:100%;text-align:left;padding:8px 11px;min-height:36px;border-radius:7px}
-.workspace-menu button:hover{background:#f5f7f9}
 .text-button{color:#434d58}
 .text-button.danger{color:var(--color-error)}
 .study-widget .workspace-card .site-list{margin:14px 0;font-size:12px;line-height:1.5;color:#616a74;display:grid;gap:7px}

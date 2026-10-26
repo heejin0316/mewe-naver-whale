@@ -51,6 +51,8 @@ const server = http.createServer((req, res) => {
     await page.goto(origin+'/sidebar.html');
     await page.getByRole('article',{name:'기존 논문',exact:true}).waitFor();
     await shot('main');
+    assert.equal(await page.getByText('MY TABS',{exact:true}).count(),0);
+    assert.equal(await page.locator('.workspace-menu,.workspace-card-header>.icon-button').count(),0);
     for(const name of ['탭 저장하기','공유 코드 입력','저장한 탭 관리']) assert.equal(await page.getByRole('button',{name,exact:true}).count(),1);
     await page.getByRole('button',{name:'저장한 탭 관리',exact:true}).click();
     assert.equal(await page.evaluate(()=>document.activeElement.tagName),'H2');
